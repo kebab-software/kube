@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="brand/logo.png" width="150px" height="150px" />
+  <img src="brand/logo-rounded.png" width="150px" height="150px" />
   <h1>kube</h1>
 </div>
 
