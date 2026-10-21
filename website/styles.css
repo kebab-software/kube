@@ -63,6 +63,7 @@ body {
   height: 32px;
   width: auto;
   display: block;
+  border-radius: 20%;
 }
 
 .nav-links {
