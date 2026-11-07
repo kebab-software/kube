@@ -1,0 +1,83 @@
+name: Build Kube
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  web:
+    name: Web and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kube-web
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+  android:
+    name: Android APK
+    needs: web
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - run: npm ci
+      - run: chmod +x android/gradlew
+      - run: npm run build:android
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kube-android-debug
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
+  desktop:
+    name: Desktop (${{ matrix.os }})
+    needs: web
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build:desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kube-desktop-${{ matrix.os }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            release/*.exe
+            release/*.dmg
+            release/*.AppImage
