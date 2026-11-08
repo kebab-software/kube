@@ -1,0 +1,29 @@
+import { test, expect } from '@playwright/test';
+test('compact player navigation and persistent playlist creation', async ({ page }) => {
+  await page.setViewportSize({ width: 1365, height: 900 });
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Listen now', exact: true })).toBeVisible();
+  await expect(page.locator('.hero')).toHaveCount(0);
+  await expect(page.locator('.brand img')).toHaveJSProperty('naturalWidth', 192);
+  await page.screenshot({ path: 'test-results/kube-desktop.png', fullPage: true });
+  await page.getByRole('navigation', { name: 'Library shortcuts' }).getByRole('button', { name: /Playlists/ }).click();
+  await page.getByRole('button', { name: 'New playlist', exact: true }).click();
+  await page.getByLabel('Playlist name', { exact: true }).fill('Evening listening');
+  await page.getByRole('dialog').getByRole('button', { name: 'Create playlist', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Evening listening' })).toBeVisible();
+  await page.reload();
+  await page.getByRole('navigation', { name: 'Library shortcuts' }).getByRole('button', { name: /Playlists/ }).click();
+  await expect(page.getByRole('heading', { name: 'Evening listening' })).toBeVisible();
+});
+test('mobile layout keeps library and queue controls accessible', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Kube home' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Library shortcuts' }).getByRole('button', { name: /Artists/ })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: 'test-results/kube-mobile.png', fullPage: true });
+  await page.getByRole('button', { name: 'Show queue', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Up next', exact: true })).toBeVisible();
+  await page.getByRole('navigation', { name: 'Mobile navigation' }).getByRole('button', { name: 'Settings' }).click();
+  await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
+});

@@ -9,6 +9,9 @@
   "main": "electron/main.cjs",
   "engines": { "node": ">=22.12.0" },
   "scripts": {
+    "icons": "node scripts/generate-icons.mjs",
+    "predev": "npm run icons",
+    "prebuild": "npm run icons",
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 127.0.0.1",
@@ -43,20 +46,21 @@
     "@vitejs/plugin-react": "^5.1.0",
     "electron": "^42.0.0",
     "electron-builder": "^26.0.0",
+    "sharp": "^0.35.5",
     "typescript": "^5.9.0",
     "vite": "^7.2.0",
     "vitest": "^5.1.0"
   },
-  "overrides": { "minimatch": "^10.2.0" },
+  "overrides": { "minimatch": "^11.0.1" },
   "build": {
     "appId": "app.kube.music",
     "productName": "Kube",
-    "directories": { "output": "release" },
+    "directories": { "output": "release", "buildResources": "build/icons" },
     "files": ["dist/**/*", "electron/**/*", "package.json"],
     "asar": true,
-    "win": { "target": ["nsis"], "signAndEditExecutable": false },
+    "win": { "target": ["nsis"], "icon": "build/icons/icon.ico", "signAndEditExecutable": true },
     "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true },
-    "mac": { "target": ["dmg"], "category": "public.app-category.music" },
-    "linux": { "target": ["AppImage"], "category": "AudioVideo" }
+    "mac": { "target": ["dmg"], "icon": "build/icons/icon.icns", "category": "public.app-category.music" },
+    "linux": { "target": ["AppImage"], "icon": "build/icons/icon.png", "category": "AudioVideo" }
   }
 }

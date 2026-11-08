@@ -1,4 +1,4 @@
-param([ValidateSet('install','check','probe','diagnose','android-add','android-sync','desktop-build','android-build','dev','e2e','inspect','audit')][string]$Task = 'check')
+param([ValidateSet('install','check','icons','probe','diagnose','android-add','android-sync','desktop-build','android-build','dev','e2e','inspect','audit')][string]$Task = 'check')
 $ErrorActionPreference = 'Stop'
 Set-Location (Split-Path $PSScriptRoot -Parent)
 $runtime = Join-Path $env:USERPROFILE '.cache/codex-runtimes/codex-primary-runtime/dependencies/node'
@@ -22,6 +22,7 @@ if (Test-Path "$runtime/bin/node.exe") {
 switch ($Task) {
   install { & $node $npm install }
   check { & $node $npm run check }
+  icons { & $node $npm run icons }
   probe { & $node scripts/smoke-live.mjs }
   diagnose { & $node scripts/diagnose-stream.mjs }
   android-add { & $node node_modules/@capacitor/cli/bin/capacitor add android }

@@ -1,0 +1,104 @@
+name: Attach release builds
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing release tag (only needed when uploading)
+        required: false
+        type: string
+      dry_run:
+        description: Verify and package artifacts without changing a release
+        default: true
+        type: boolean
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: release-assets-${{ github.event.release.id || inputs.release_tag || github.run_id }}
+  cancel-in-progress: false
+jobs:
+  attach:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - name: Select latest successful default-branch build
+        id: build
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { selectBuild, validateArtifacts } = require('./.github/scripts/release-build.cjs');
+            const branch = context.payload.repository.default_branch;
+            const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
+              ...context.repo, workflow_id: 'build.yml', branch, status: 'success', per_page: 100
+            });
+            const run = selectBuild(runs, branch, context.payload.repository.id);
+            const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {
+              ...context.repo, run_id: run.id, per_page: 100
+            });
+            validateArtifacts(artifacts);
+            core.setOutput('run_id', String(run.id));
+            core.setOutput('sha', run.head_sha);
+            core.setOutput('url', run.html_url);
+            require('fs').writeFileSync('build-info.json', JSON.stringify({
+              repository: `${context.repo.owner}/${context.repo.repo}`, branch,
+              commit: run.head_sha, build: run.html_url, run_id: run.id,
+              release_tag: context.payload.release?.tag_name || process.env.INPUT_RELEASE_TAG || null,
+              selection: 'Latest successful default-branch Build Kube run; not necessarily the release tag commit.',
+              android: 'Debug APK', desktop: 'Unsigned distribution packages'
+            }, null, 2));
+            await core.summary.addHeading('Selected build').addLink(run.head_sha, run.html_url)
+              .addRaw('\nArtifacts come from this build, which may differ from the release tag.\n').write();
+        env:
+          INPUT_RELEASE_TAG: ${{ inputs.release_tag }}
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.build.outputs.run_id }}
+          pattern: kube-*
+          path: build-artifacts
+      - name: Prepare release files and checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir release-assets
+          (cd build-artifacts/kube-web && zip -qr ../../release-assets/kube-web.zip .)
+          find build-artifacts -type f \( -name '*.apk' -o -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' \) -exec cp '{}' release-assets/ \;
+          cp build-info.json release-assets/
+          test "$(find release-assets -maxdepth 1 -type f | wc -l)" -ge 6
+          (cd release-assets && sha256sum -- * > SHA256SUMS.txt)
+      - name: Verify destination release
+        if: github.event_name == 'release' || !inputs.dry_run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$RELEASE_TAG"
+          gh release view "$RELEASE_TAG" --json isDraft --jq 'if .isDraft then error("Publish the release before attaching artifacts") else true end'
+      - name: Attach files to published release
+        if: github.event_name == 'release' || !inputs.dry_run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
+        shell: bash
+        run: gh release upload "$RELEASE_TAG" release-assets/* --clobber
+      - name: Save dry-run package
+        if: github.event_name == 'workflow_dispatch' && inputs.dry_run
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-preview
+          path: release-assets/
+          if-no-files-found: error
+          retention-days: 7

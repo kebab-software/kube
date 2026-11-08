@@ -5,7 +5,7 @@ protocol.registerSchemesAsPrivileged([{ scheme: 'kube', privileges: { standard: 
 app.setAppUserModelId('app.kube.music');
 let window;
 function createWindow() {
-  window = new BrowserWindow({ width: 1440, height: 940, minWidth: 390, minHeight: 640, title: 'Kube', backgroundColor: '#101113', autoHideMenuBar: true, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true } });
+  window = new BrowserWindow({ width: 1440, height: 940, minWidth: 390, minHeight: 640, title: 'Kube', icon: path.join(__dirname, '../dist/icon-512.png'), backgroundColor: '#101113', autoHideMenuBar: true, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true } });
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', e => e.preventDefault());
   window.loadURL('kube://app/index.html');

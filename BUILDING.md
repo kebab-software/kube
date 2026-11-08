@@ -76,6 +76,39 @@ Recommendation-driven queue extension runs in the React layer; it may wait until
 the WebView resumes after the prepared native queue ends. Listening time recorded
 by the JavaScript polling loop can undercount while the WebView is suspended.
 
+## Brand icons
+
+`npm run icons` derives all application artwork from `brand/logo.png` and
+`brand/logo-rounded.png`. It runs automatically before development and production
+builds. Outputs include the in-app logo, favicon, Apple touch icon, web manifest
+icons, Windows ICO, macOS ICNS, Linux PNG, and Android legacy, round, adaptive,
+and monochrome launcher icons. Android foreground artwork is padded for launcher
+masking. No replacement brand artwork is generated.
+
+## GitHub release attachments
+
+Publishing a release or prerelease triggers **Attach release builds**. Saving a draft
+does not. The workflow selects the latest successful **Build Kube** run on the
+repository's default branch, verifies all five unexpired artifacts, then attaches:
+
+- Android debug APK, Windows installer, macOS DMG, and Linux AppImage.
+- `kube-web.zip`, `SHA256SUMS.txt`, and `build-info.json`.
+
+This intentionally uses the latest successful default-branch build, which can differ
+from the release tag's commit. `build-info.json` records the exact source SHA and run.
+Wait for the desired build to finish before publishing. If the latest successful
+build's artifacts have expired (14 days), run a fresh build first. Draft releases,
+immutable releases that forbid asset changes, and releases created with another
+workflow's default `GITHUB_TOKEN` do not support this automatic publish-and-attach
+flow in the same way; use the manual workflow after publishing when applicable.
+
+For an existing release, run **Attach release builds** manually, enter its tag, and
+disable **dry_run**. The default dry run packages and validates downloads without
+modifying a release. Re-running an upload replaces files with the same generated
+names; unrelated release assets are kept. No extra personal-access-token secret is
+required. Release binaries retain their normal build signing status (debug Android
+and unsigned desktop distribution packages).
+
 ## Real API diagnostics
 
 ```sh
@@ -110,16 +143,14 @@ Invidious is a video API, so channel uploads and related videos can include nonm
 
 ## Verification state
 
-- A production web build completed successfully, and 13 unit tests passed.
-- The latest native queue TypeScript integration and updated test dependencies pass
-  the 13 unit tests; native platform verification is performed by the GitHub jobs.
+- The updated production web build, 16 unit tests, and two desktop/mobile browser
+  interaction tests passed locally. Platform packaging is verified in GitHub Actions.
 - Real default-instance search and video detail requests succeeded.
 - The audio-byte smoke test failed with HTTP 403 from the instance's proxy.
-- Android and desktop packages have not yet been compiled or launched.
-- Browser interaction and physical Android playback have not yet been verified.
-- Production dependencies reported no advisories at the first audit. After test-tool
-  updates, npm reported six moderate development dependency advisories; review before
-  release.
+- Android and all three desktop packages compiled successfully in the initial GitHub
+  workflow. The latest platform build results are available on the Actions page.
+- Physical Android playback and desktop installer runtime behaviour remain unverified.
+- The latest dependency installation reported zero known npm vulnerabilities.
 
 The implementation is **not yet release-verified**. Do not treat the current build
 output or platform configuration as evidence that end-to-end playback works.
