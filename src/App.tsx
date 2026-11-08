@@ -6,6 +6,7 @@ import { recommendations, rankRecommendations, type Recommendation } from './rec
 import { type Track, uniqueTracks, type Artist } from './model';
 import { Cover, Empty, Failure, IconButton, Loading, Modal, PlayerBar, TrackRow } from './components';
 import { Settings } from './Settings';
+import { UpdateNotice } from './UpdateNotice';
 
 type View = 'home' | 'search' | 'liked' | 'playlists' | 'history' | 'artists' | 'settings' | 'queue' | 'artist' | 'playlist';
 export function App() {
@@ -126,6 +127,7 @@ export function App() {
     </main></div>
     <nav className="mobile-nav" aria-label="Mobile navigation">{[{ id: 'home' as View, title: 'Home', icon: Home }, { id: 'search' as View, title: 'Explore', icon: Search }, { id: 'playlists' as View, title: 'Library', icon: Library }, { id: 'liked' as View, title: 'Liked', icon: Heart }, { id: 'settings' as View, title: 'Settings', icon: SettingsIcon }].map(({ id, title, icon: Icon }) => <button className={view === id ? 'current' : ''} key={id} onClick={() => navigate(id)}><Icon size={19} /><span>{title}</span></button>)}</nav>
     <PlayerBar openQueue={() => navigate('queue')} />
+    <UpdateNotice />
     {notice && <div className="toast" role="status">{notice}</div>}
     {playlistModal && <Modal title={playlistModal === 'add' ? 'Add to playlist' : playlistModal === 'rename' ? 'Rename playlist' : 'Create a playlist'} close={() => setPlaylistModal(null)}>{playlistModal === 'add' && <div className="playlist-choices">{library.playlists.map(p => <button key={p.id} onClick={() => { if (trackToAdd) update(old => ({ ...old, playlists: old.playlists.map(list => list.id === p.id ? { ...list, tracks: uniqueTracks([...list.tracks, trackToAdd]) } : list) })); setPlaylistModal(null); notify(`Added to ${p.name}`); }}><ListMusic size={19} />{p.name}<Plus size={16} /></button>)}</div>}<form onSubmit={createPlaylist}><label htmlFor="playlist-name">{playlistModal === 'add' ? 'Or create a new playlist' : 'Playlist name'}</label><input id="playlist-name" autoFocus required maxLength={120} value={playlistName} onChange={e => setPlaylistName(e.target.value)} placeholder="Playlist name" /><button className="primary modal-submit" disabled={!playlistName.trim()} type="submit">{playlistModal === 'rename' ? 'Save name' : 'Create playlist'}</button></form></Modal>}
     {importModal && <Modal title="Import a public playlist" close={() => { if (!importBusy) setImportModal(false); }}><p>Paste a YouTube playlist URL or ID. Tracks are copied to your local library through Invidious.</p><form onSubmit={e => void importPlaylist(e)}><label htmlFor="playlist-url">Playlist URL or ID</label><input id="playlist-url" required value={importValue} onChange={e => setImportValue(e.target.value)} />{importError && <Failure message={importError} />}<button className="primary modal-submit" disabled={importBusy}>{importBusy ? 'Importing tracks…' : 'Import playlist'}</button></form></Modal>}

@@ -3,6 +3,14 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      release_version:
+        type: string
+        default: ''
+      android_version_code:
+        type: string
+        default: '1'
 permissions:
   contents: read
 concurrency:
@@ -20,6 +28,11 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: Set release version
+        if: inputs.release_version != ''
+        env:
+          RELEASE_VERSION: ${{ inputs.release_version }}
+        run: node scripts/prepare-release.mjs "$RELEASE_VERSION"
       - run: npm run check
       - uses: actions/upload-artifact@v4
         with:
@@ -48,12 +61,51 @@ jobs:
           log-accepted-android-sdk-licenses: false
       - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
       - run: npm ci
+      - name: Prepare signed release
+        if: inputs.release_version != ''
+        env:
+          RELEASE_VERSION: ${{ inputs.release_version }}
+          KEYSTORE_BASE64: ${{ secrets.KUBE_ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KUBE_ANDROID_KEYSTORE_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_BASE64" || { echo 'Configure KUBE_ANDROID_KEYSTORE_BASE64 first'; exit 1; }
+          test -n "$KEYSTORE_PASSWORD" || { echo 'Configure KUBE_ANDROID_KEYSTORE_PASSWORD first'; exit 1; }
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/kube-release.jks"
+          chmod 600 "$RUNNER_TEMP/kube-release.jks"
+          node scripts/prepare-release.mjs "$RELEASE_VERSION"
       - run: chmod +x android/gradlew
-      - run: npm run build:android
+      - name: Build debug APK
+        if: inputs.release_version == ''
+        run: npm run build:android
+      - name: Build signed APK and bundle
+        if: inputs.release_version != ''
+        env:
+          KUBE_VERSION: ${{ inputs.release_version }}
+          KUBE_ANDROID_VERSION_CODE: ${{ inputs.android_version_code }}
+          KUBE_RELEASE_BUILD: 'true'
+          KUBE_KEYSTORE_PATH: ${{ runner.temp }}/kube-release.jks
+          KUBE_KEYSTORE_PASSWORD: ${{ secrets.KUBE_ANDROID_KEYSTORE_PASSWORD }}
+        run: npm run build:android:release
+      - name: Remove signing key from runner
+        if: always() && inputs.release_version != ''
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/kube-release.jks"
       - uses: actions/upload-artifact@v4
+        if: inputs.release_version == ''
         with:
           name: kube-android-debug
           path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: inputs.release_version != ''
+        with:
+          name: kube-android-release
+          path: |
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
           retention-days: 14
   desktop:
@@ -72,9 +124,21 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: Set desktop release version
+        if: inputs.release_version != ''
+        env:
+          RELEASE_VERSION: ${{ inputs.release_version }}
+          CSC_LINK: ${{ (matrix.os == 'macos-latest' && secrets.MAC_CSC_LINK) || (matrix.os == 'windows-latest' && secrets.WIN_CSC_LINK) || '' }}
+        shell: bash
+        run: node scripts/prepare-release.mjs "$RELEASE_VERSION"
       - run: npm run build:desktop
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ inputs.release_version != '' && secrets.MAC_CSC_LINK != '' && 'true' || 'false' }}
+          CSC_LINK: ${{ inputs.release_version != '' && ((matrix.os == 'macos-latest' && secrets.MAC_CSC_LINK) || (matrix.os == 'windows-latest' && secrets.WIN_CSC_LINK)) || '' }}
+          CSC_KEY_PASSWORD: ${{ inputs.release_version != '' && ((matrix.os == 'macos-latest' && secrets.MAC_CSC_KEY_PASSWORD) || (matrix.os == 'windows-latest' && secrets.WIN_CSC_KEY_PASSWORD)) || '' }}
+          APPLE_ID: ${{ inputs.release_version != '' && secrets.APPLE_ID || '' }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ inputs.release_version != '' && secrets.APPLE_APP_SPECIFIC_PASSWORD || '' }}
+          APPLE_TEAM_ID: ${{ inputs.release_version != '' && secrets.APPLE_TEAM_ID || '' }}
       - uses: actions/upload-artifact@v4
         with:
           name: kube-desktop-${{ matrix.os }}
@@ -84,3 +148,6 @@ jobs:
             release/*.exe
             release/*.dmg
             release/*.AppImage
+            release/*.zip
+            release/*.blockmap
+            release/latest*.yml

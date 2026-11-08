@@ -1,0 +1,12 @@
+import { readFile, writeFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+const { releaseVersion } = createRequire(import.meta.url)('./release-version.cjs');
+const { version, versionCode } = releaseVersion(process.argv[2]);
+const pkg = JSON.parse(await readFile('package.json', 'utf8'));
+pkg.version = version;
+await writeFile('package.json', JSON.stringify(pkg, null, 2) + '\n');
+const lock = JSON.parse(await readFile('package-lock.json', 'utf8'));
+lock.version = version; lock.packages[''].version = version;
+await writeFile('package-lock.json', JSON.stringify(lock, null, 2) + '\n');
+await writeFile('electron/release-config.json', JSON.stringify({ enabled: true, macSigned: process.platform === 'darwin' && Boolean(process.env.CSC_LINK) }));
+console.log(`Release version: ${version}; Android version code: ${versionCode}`);

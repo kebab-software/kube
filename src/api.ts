@@ -1,8 +1,14 @@
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { trackSchema, tracksFrom, type Track, type Settings } from './model';
+import type { UpdateStatus } from './update-types';
 
 declare global {
-  interface Window { kubeDesktop?: { request: (url: string) => Promise<unknown> } }
+  interface Window { kubeDesktop?: {
+    request: (url: string) => Promise<unknown>;
+    updateStatus: () => Promise<UpdateStatus>; checkUpdate: () => Promise<UpdateStatus>;
+    installUpdate: () => Promise<void>; openReleases: () => Promise<void>;
+    onUpdate: (callback: (state: UpdateStatus) => void) => () => void;
+  } }
 }
 export class ApiError extends Error {}
 export function instanceOrigin(value: string) {

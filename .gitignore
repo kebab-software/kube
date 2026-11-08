@@ -14,3 +14,7 @@ playwright-report/
 *.tsbuildinfo
 *.jks
 *.keystore
+.secrets/
+electron/release-config.json
+*.p12
+*.pfx

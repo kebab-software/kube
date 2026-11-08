@@ -6,6 +6,7 @@ import { discoverInstances, Invidious, instanceOrigin } from './api';
 import { exportLibrary, parseBackup } from './storage';
 import { defaultLibrary } from './model';
 import { Failure, Modal } from './components';
+import { UpdateSettings } from './UpdateNotice';
 export function Settings() {
   const { library, update, player, notify, recover, storageWarning } = useApp();
   const [instance, setInstance] = useState(library.settings.instance);
@@ -31,6 +32,7 @@ export function Settings() {
   }
   return <div className="settings-page"><header className="page-heading"><div><h1>Settings</h1><p>Connection, playback, and local library.</p></div><ShieldCheck size={36} className="accent" /></header>
     {error && <Failure message={error} />}
+    <UpdateSettings />
     <section className="settings-card"><h2>Music connection</h2><p>Kube uses your chosen Invidious instance for search, artwork, and proxied audio. Instance operators can see requests; your preferences and listening history stay on this device.</p><label htmlFor="instance">Invidious instance</label><div className="input-action"><input id="instance" type="url" value={instance} onChange={e => setInstance(e.target.value)} placeholder="https://your-instance.example" /><button className="primary" onClick={() => void connect()} disabled={busy}>{busy ? 'Testing…' : 'Test & connect'}</button></div><p className="help">Only saves after a successful search request. Public APIs may be disabled, rate-limited, or temporarily blocked by YouTube. Web builds require CORS support.</p>{status && <p className="success" role="status">{status}</p>}
       <button className="text-button" disabled={busy} onClick={async () => { setBusy(true); setError(''); try { const result = await discoverInstances(); setInstances(result); if (!result.length) setStatus('The official registry currently lists no API-enabled instances. You can enter your own above.'); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } }}><RefreshCw size={16} /> Find instances in the official registry</button>
       {instances.map(i => <button className="instance-option" key={i.origin} onClick={() => setInstance(i.origin)}><strong>{new URL(i.origin).hostname}</strong><span>{i.region} · {i.cors ? 'Web compatible' : 'Native / desktop only'}</span></button>)}

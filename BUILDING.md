@@ -64,9 +64,9 @@ npm run build:android
 ```
 
 The debug APK is written to `android/app/build/outputs/apk/debug/app-debug.apk`.
-`npm run build:android:release` builds an unsigned release bundle. Configure your own
-keystore with Android Studio before distributing a signed release. Never commit
-keystores or passwords.
+`npm run build:android:release` builds a signed release APK and bundle, requiring
+the persistent signing environment described in [RELEASING.md](RELEASING.md).
+It fails if signing credentials are absent. Never commit keystores or passwords.
 
 The native Media3 service owns audio playback, audio focus, headphone-disconnect
 handling, and the system media notification. Prepared upcoming tracks use Invidious
@@ -87,27 +87,14 @@ masking. No replacement brand artwork is generated.
 
 ## GitHub release attachments
 
-Publishing a release or prerelease triggers **Attach release builds**. Saving a draft
-does not. The workflow selects the latest successful **Build Kube** run on the
-repository's default branch, verifies all five unexpired artifacts, then attaches:
+Publishing a stable release such as `v0.2.0` triggers **Publish app release**.
+It rebuilds the tagged commit with the release version, signs Android with the
+permanent key, and uploads installers and automatic-update metadata. This replaces
+copying the latest development artifacts, which lack the right version and signing.
 
-- Android debug APK, Windows installer, macOS DMG, and Linux AppImage.
-- `kube-web.zip`, `SHA256SUMS.txt`, and `build-info.json`.
-
-This intentionally uses the latest successful default-branch build, which can differ
-from the release tag's commit. `build-info.json` records the exact source SHA and run.
-Wait for the desired build to finish before publishing. If the latest successful
-build's artifacts have expired (14 days), run a fresh build first. Draft releases,
-immutable releases that forbid asset changes, and releases created with another
-workflow's default `GITHUB_TOKEN` do not support this automatic publish-and-attach
-flow in the same way; use the manual workflow after publishing when applicable.
-
-For an existing release, run **Attach release builds** manually, enter its tag, and
-disable **dry_run**. The default dry run packages and validates downloads without
-modifying a release. Re-running an upload replaces files with the same generated
-names; unrelated release assets are kept. No extra personal-access-token secret is
-required. Release binaries retain their normal build signing status (debug Android
-and unsigned desktop distribution packages).
+See [RELEASING.md](RELEASING.md) for one-time signing setup, supported update
+behaviour, the dry-run workflow, and optional Apple/Windows signing credentials.
+Release CI does not publish anything in dry-run mode.
 
 ## Real API diagnostics
 
@@ -143,7 +130,7 @@ Invidious is a video API, so channel uploads and related videos can include nonm
 
 ## Verification state
 
-- The updated production web build, 16 unit tests, and two desktop/mobile browser
+- The updated production web build, 20 unit tests, and two desktop/mobile browser
   interaction tests passed locally. Platform packaging is verified in GitHub Actions.
 - Real default-instance search and video detail requests succeeded.
 - The audio-byte smoke test failed with HTTP 403 from the instance's proxy.

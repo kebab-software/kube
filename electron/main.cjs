@@ -34,6 +34,7 @@ app.whenReady().then(() => {
     return JSON.parse(Buffer.concat(chunks).toString('utf8'));
   });
   createWindow();
+  require('./updates.cjs').configureUpdates(() => window);
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });

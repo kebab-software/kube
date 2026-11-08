@@ -1,0 +1,1 @@
+export type UpdateStatus = { platform: string; currentVersion: string; status: 'idle' | 'checking' | 'current' | 'downloading' | 'ready' | 'error' | 'unavailable'; message: string; version?: string; progress?: number };
