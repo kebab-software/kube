@@ -131,7 +131,14 @@ jobs:
           CSC_LINK: ${{ (matrix.os == 'macos-latest' && secrets.MAC_CSC_LINK) || (matrix.os == 'windows-latest' && secrets.WIN_CSC_LINK) || '' }}
         shell: bash
         run: node scripts/prepare-release.mjs "$RELEASE_VERSION"
-      - run: npm run build:desktop
+      - name: Build desktop installer
+        shell: bash
+        run: |
+          # electron-builder treats an empty CSC_LINK as a certificate path.
+          for variable in CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
+            if [ -z "${!variable}" ]; then unset "$variable"; fi
+          done
+          npm run build:desktop
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: ${{ inputs.release_version != '' && secrets.MAC_CSC_LINK != '' && 'true' || 'false' }}
           CSC_LINK: ${{ inputs.release_version != '' && ((matrix.os == 'macos-latest' && secrets.MAC_CSC_LINK) || (matrix.os == 'windows-latest' && secrets.WIN_CSC_LINK)) || '' }}
