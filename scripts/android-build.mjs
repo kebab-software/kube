@@ -1,5 +1,10 @@
 import { spawnSync } from 'node:child_process';
+import { readFileSync, renameSync } from 'node:fs';
 const release = process.argv[2] === 'release';
 const result = spawnSync(process.platform === 'win32' ? 'gradlew.bat' : './gradlew', [...(release ? ['assembleRelease', 'bundleRelease'] : ['assembleDebug']), '--no-daemon'], { cwd: 'android', stdio: 'inherit', shell: process.platform === 'win32' });
 if (result.error) console.error(result.error.message);
-process.exit(result.status ?? 1);
+if (result.status !== 0) process.exit(result.status ?? 1);
+const version = process.env.KUBE_VERSION || JSON.parse(readFileSync('package.json', 'utf8')).version;
+const kind = release ? 'release' : 'debug';
+const directory = 'android/app/build/outputs/apk/' + kind;
+renameSync(directory + '/app-' + kind + '.apk', directory + '/Kube-v' + version + (release ? '' : '-debug') + '.apk');

@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const trackSchema = z.object({
   videoId: z.string().regex(/^[\w-]{11}$/), title: z.string().max(2000),
   author: z.string().max(1000).default('Unknown artist'), authorId: z.string().max(200).default(''),
+  musicVerified: z.boolean().optional(),
   lengthSeconds: z.number().nonnegative().default(0),
   videoThumbnails: z.array(z.object({ url: z.string(), width: z.number().optional(), quality: z.string().optional() })).default([]),
   viewCount: z.number().optional(), liveNow: z.boolean().optional(),

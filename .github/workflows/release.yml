@@ -83,6 +83,7 @@ jobs:
             gh release upload "$RELEASE_TAG" "$file" --clobber
           done
           gh release upload "$RELEASE_TAG" release-assets/latest*.yml release-assets/android-update.json --clobber
+          node scripts/release-downloads.mjs
       - name: Save dry-run release package
         if: github.event_name == 'workflow_dispatch' && inputs.dry_run
         uses: actions/upload-artifact@v4

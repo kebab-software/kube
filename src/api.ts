@@ -1,5 +1,6 @@
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { trackSchema, tracksFrom, type Track, type Settings } from './model';
+import { hasMusicMetadata, mapMusicPage } from './music';
 import type { UpdateStatus } from './update-types';
 
 declare global {
@@ -52,24 +53,50 @@ export class Invidious {
     url.search = new URLSearchParams({ region: this.settings.region, ...params }).toString();
     return requestJson(url.href, signal);
   }
-  async trending(signal?: AbortSignal) { return tracksFrom(await this.get('trending', { type: 'music' }, signal)); }
-  async search(query: string, page = 1, signal?: AbortSignal) { return tracksFrom(await this.get('search', { q: query, type: 'video', page: String(page) }, signal)); }
+  private async musicPage(rows: unknown, signal?: AbortSignal) {
+    const candidates = tracksFrom(rows);
+    let failures = 0;
+    let failure: unknown;
+    const verified = await mapMusicPage(candidates, async track => {
+      try { return (await this.details(track.videoId, signal)).track; }
+      catch (error) {
+        signal?.throwIfAborted();
+        if (error instanceof ApiError && /HTTP (404|410)/.test(error.message)) return undefined;
+        if (error instanceof ApiError && /HTTP 429/.test(error.message)) throw error;
+        failures++;
+        failure = error;
+        return undefined;
+      }
+    }, signal);
+    if (failures && failures === candidates.length) throw failure;
+    return verified.filter((t): t is Track => Boolean(t?.musicVerified && !t.liveNow));
+  }
+  async trending(signal?: AbortSignal) {
+    return this.musicPage(await this.get('trending', { type: 'music' }, signal), signal);
+  }
+  async searchPage(query: string, page = 1, signal?: AbortSignal) {
+    const rows = await this.get('search', { q: query, type: 'video', page: String(page) }, signal);
+    return { tracks: await this.musicPage(rows, signal), hasMore: Array.isArray(rows) && rows.length > 0 };
+  }
+  async search(query: string, page = 1, signal?: AbortSignal) {
+    return (await this.searchPage(query, page, signal)).tracks;
+  }
   async channel(id: string, continuation?: string, signal?: AbortSignal): Promise<{ tracks: Track[]; continuation?: string }> {
     const data = await this.get(`channels/${encodeURIComponent(id)}/videos`, continuation ? { continuation } : {}, signal) as { videos?: unknown; continuation?: string };
-    return { tracks: tracksFrom(data.videos), continuation: data.continuation };
+    return { tracks: await this.musicPage(data.videos, signal), continuation: data.continuation };
   }
   async playlist(id: string, page = 1) {
     if (!/^[\w-]{10,100}$/.test(id)) throw new ApiError('Enter a valid YouTube playlist ID or URL.');
     const data = await this.get(`playlists/${id}`, { page: String(page) }) as { title?: string; videos?: unknown; videoCount?: number };
-    return { title: data.title || 'Imported playlist', tracks: tracksFrom(data.videos), count: data.videoCount || 0 };
+    return { title: data.title || 'Imported playlist', tracks: await this.musicPage(data.videos), scanned: Array.isArray(data.videos) ? data.videos.length : 0, count: data.videoCount || 0 };
   }
-  async video(id: string, signal?: AbortSignal): Promise<VideoDetail> {
+  private async details(id: string, signal?: AbortSignal): Promise<VideoDetail> {
     if (!/^[\w-]{11}$/.test(id)) throw new ApiError('Invalid track ID.');
     const key = `${this.origin}:${this.settings.region}:${id}`;
     const hit = cache.get(key);
     if (hit && hit.expires > Date.now()) return hit.data;
     const raw = await this.get(`videos/${id}`, {}, signal) as Record<string, unknown>;
-    const track = trackSchema.parse(raw);
+    const track = { ...trackSchema.parse(raw), musicVerified: hasMusicMetadata(raw) };
     const formats = (Array.isArray(raw.adaptiveFormats) ? raw.adaptiveFormats : []).flatMap((f: Record<string, unknown>) => {
       if (typeof f.type !== 'string' || !f.type.startsWith('audio/') || !/^\d+$/.test(String(f.itag))) return [];
       return [{ itag: String(f.itag), type: f.type, bitrate: Number(f.bitrate) || 0 }];
@@ -78,6 +105,18 @@ export class Invidious {
     if (cache.size > 100) cache.delete(cache.keys().next().value!);
     cache.set(key, { data, expires: Date.now() + 5 * 60_000 });
     return data;
+  }
+  async classify(track: Track, signal?: AbortSignal) {
+    return (await this.details(track.videoId, signal)).track.musicVerified === true;
+  }
+  async video(id: string, signal?: AbortSignal) {
+    const detail = await this.details(id, signal);
+    if (!detail.track.musicVerified || detail.track.liveNow) throw new ApiError('This video has no supported music metadata.');
+    return detail;
+  }
+  async related(id: string, signal?: AbortSignal) {
+    const detail = await this.video(id, signal);
+    return this.musicPage(detail.related, signal);
   }
   stream(id: string, itag: string) {
     return `${this.origin}/latest_version?${new URLSearchParams({ id, itag, local: 'true' })}`;

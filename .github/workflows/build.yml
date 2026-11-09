@@ -34,7 +34,15 @@ jobs:
           RELEASE_VERSION: ${{ inputs.release_version }}
         run: node scripts/prepare-release.mjs "$RELEASE_VERSION"
       - run: npm run check
+      - run: node scripts/standalone-web.mjs
+      - uses: actions/upload-artifact@v7
+        if: inputs.release_version == ''
+        with:
+          path: dist/Kube-v*.html
+          archive: false
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
+        if: inputs.release_version != ''
         with:
           name: kube-web
           path: dist/
@@ -92,10 +100,10 @@ jobs:
         if: always() && inputs.release_version != ''
         shell: bash
         run: rm -f "$RUNNER_TEMP/kube-release.jks"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: inputs.release_version == ''
         with:
-          name: kube-android-debug
+          archive: false
           path: android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
@@ -146,7 +154,17 @@ jobs:
           APPLE_ID: ${{ inputs.release_version != '' && secrets.APPLE_ID || '' }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ inputs.release_version != '' && secrets.APPLE_APP_SPECIFIC_PASSWORD || '' }}
           APPLE_TEAM_ID: ${{ inputs.release_version != '' && secrets.APPLE_TEAM_ID || '' }}
+      - uses: actions/upload-artifact@v7
+        if: inputs.release_version == ''
+        with:
+          archive: false
+          if-no-files-found: error
+          path: |
+            release/*.exe
+            release/*.dmg
+            release/*.AppImage
       - uses: actions/upload-artifact@v4
+        if: inputs.release_version != ''
         with:
           name: kube-desktop-${{ matrix.os }}
           if-no-files-found: error

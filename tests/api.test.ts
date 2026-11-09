@@ -11,6 +11,17 @@ describe('Invidious client', () => {
     vi.stubGlobal('window', {}); const fetcher = vi.fn().mockResolvedValue(new Response('', { status: 429 })); vi.stubGlobal('fetch', fetcher);
     await expect(requestJson('https://example.com/api/v1/search')).rejects.toThrow('429'); expect(fetcher).toHaveBeenCalledTimes(1);
   });
+  it('uses video metadata for mixed music searches and rejects ordinary video playback', async () => {
+    const api = new Invidious({ ...defaultLibrary().settings, instance: 'https://catalog.example' });
+    const clips = [
+      { videoId: 'abcdefghij1', title: 'Interview about music', genre: 'People & Blogs' },
+      { videoId: 'abcdefghij2', title: 'Concert', genre: 'Music' },
+      { videoId: 'abcdefghij3', title: 'Performance', genre: 'Entertainment', musicTracks: [{ song: 'Live track' }] },
+    ];
+    vi.spyOn(api, 'get').mockImplementation(async path => path === 'search' ? clips : clips.find(clip => path.endsWith(clip.videoId)));
+    expect((await api.search('artist')).map(t => t.title)).toEqual(['Concert', 'Performance']);
+    await expect(api.video(clips[0].videoId)).rejects.toThrow('music metadata');
+  });
   it('routes audio through the selected instance with local proxy enabled', () => {
     const api = new Invidious({ ...defaultLibrary().settings, instance: 'https://example.com' });
     expect(api.stream('5NV6Rdv1a3I', '140')).toBe('https://example.com/latest_version?id=5NV6Rdv1a3I&itag=140&local=true');

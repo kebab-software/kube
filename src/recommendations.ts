@@ -50,7 +50,7 @@ export async function recommendations(api: Invidious, library: Library, signal?:
   const seeds = uniqueTracks([...library.history.filter(h => h.seconds >= 30).slice(0, 10).map(h => h.track), ...library.liked]).slice(0, 3);
   const relatedIds = new Set<string>();
   const requests: Promise<Track[]>[] = [api.trending(signal)];
-  for (const seed of seeds) requests.push(api.video(seed.videoId, signal).then(d => { d.related.forEach(t => relatedIds.add(t.videoId)); return d.related; }));
+  for (const seed of seeds) requests.push(api.related(seed.videoId, signal).then(tracks => { tracks.forEach(t => relatedIds.add(t.videoId)); return tracks; }));
   for (const artist of library.artists.slice(0, 2)) requests.push(api.channel(artist.authorId, undefined, signal).then(d => d.tracks));
   const results = await Promise.allSettled(requests);
   const tracks = results.flatMap(r => r.status === 'fulfilled' ? r.value : []);

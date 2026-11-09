@@ -14,7 +14,8 @@ The React application builds for web, Android, Windows, macOS, and Linux.
 
 - [Build and development instructions](BUILDING.md)
 - [Release workflow and automatic updates](RELEASING.md)
-- [GitHub build downloads](https://github.com/kebab-software/kube/actions/workflows/build.yml)
+- [Download Kube for your platform](https://github.com/kebab-software/kube/releases/latest)
+- [Development builds](https://github.com/kebab-software/kube/actions/workflows/build.yml)
 
 Release builds include update checking and downloads. Android installation requires
 system confirmation; macOS automatic installation requires Apple signing credentials.

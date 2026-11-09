@@ -10,7 +10,7 @@ asset uploads are required.
 **Publish app release** rebuilds the tagged commit for web, Android, Windows,
 macOS, and Linux. It stamps package versions and a monotonically ordered Android
 version code from the tag. After every build succeeds, it attaches installers,
-the web ZIP, SHA-256 checksums, build provenance, and automatic-update feeds.
+the standalone web HTML, SHA-256 checksums, build provenance, and automatic-update feeds.
 Installers upload before update feeds so clients are not directed to missing files.
 
 This replaces the earlier “copy latest CI artifacts” workflow. Automatic updates
@@ -52,7 +52,7 @@ the releases page. Development APKs are not an update channel.
 | Linux AppImage | Same update behaviour; run the AppImage from a location writable by the user. |
 | Android signed release APK | Checks and downloads while running. Verifies SHA-256 and the installed signing certificate. “Install update” opens Android's installation confirmation; Android may first require permission to install updates from Kube. |
 | macOS | Automatic installation requires Developer ID signing. Without signing credentials, the app explicitly reports this limitation and offers the release page. |
-| Web | Loads the updated web deployment on reload. Uploading a release ZIP does not deploy a website automatically. |
+| Web | Loads the updated web deployment on reload. Uploading a release file does not deploy a website automatically. |
 
 All updater-enabled installations must first come from a release built with this
 workflow. Existing older desktop installations need one manual upgrade to get the
@@ -98,3 +98,6 @@ draft-build-publish process instead; this workflow assumes mutable GitHub releas
 Normal CI artifacts expire after 14 days. Once attached to a release, assets are
 independent of CI artifact retention. Releases must remain available for installed
 clients to retrieve their update feeds and installers.
+
+
+For each requested feature batch, push the tested changes, publish an increasing stable release with notes covering features and fixes, and verify its attached downloads. The workflow appends a download table using the URLs returned by GitHub. The macOS ZIP is an updater dependency. Users can download the DMG directly. For the web edition, download the HTML and open it in a browser.

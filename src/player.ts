@@ -155,7 +155,7 @@ export class Player {
   private async syncNativeQueue() {
     if (!this.native || !this.current()) return;
     const api = new Invidious(this.library().settings);
-    await NativePlayer.upcoming({ tracks: this.state.queue.slice(this.state.index + 1).map(track => ({ id: track.videoId, title: track.title, artist: track.author, url: api.stream(track.videoId, '140') })) });
+    await NativePlayer.upcoming({ tracks: this.state.queue.slice(this.state.index + 1).filter(track => track.musicVerified).map(track => ({ id: track.videoId, title: track.title, artist: track.author, url: api.stream(track.videoId, '140') })) });
     await NativePlayer.repeat({ mode: this.state.repeat });
   }
   enqueue(track: Track) { this.update({ queue: [...this.state.queue, track] }); void this.syncNativeQueue().catch(() => this.failPlayback()); }
@@ -191,10 +191,10 @@ export class Player {
       this.update({ loading: true });
       try {
         const api = new Invidious(this.library().settings);
-        const data = await api.video(this.current().videoId);
+        const related = await api.related(this.current().videoId);
         if (generation !== this.generation) return;
         const queued = new Set(this.state.queue.map(t => t.videoId));
-        const candidates = rankRecommendations(data.related.filter(t => !queued.has(t.videoId)), this.library()).slice(0, 12).map(r => r.track);
+        const candidates = rankRecommendations(related.filter(t => !queued.has(t.videoId)), this.library()).slice(0, 12).map(r => r.track);
         if (candidates.length) { this.update({ queue: [...this.state.queue, ...candidates], index: this.state.queue.length }); return this.load(); }
       } catch (e) { if (generation === this.generation) this.update({ error: e instanceof Error ? e.message : 'Could not extend the queue.' }); }
       if (generation !== this.generation) return;

@@ -20,7 +20,11 @@ export function saveLibrary(library: Library) {
 }
 export function parseBackup(text: string): Library {
   if (text.length > 20_000_000) throw new Error('Backup exceeds 20 MB.');
-  return librarySchema.parse(JSON.parse(text));
+  const backup = librarySchema.parse(JSON.parse(text));
+  // Imported files can have stale or edited verification flags.
+  const recheck = (track: Library['liked'][number]) => ({ ...track, musicVerified: undefined });
+  return { ...backup, liked: backup.liked.map(recheck), history: backup.history.map(h => ({ ...h, track: recheck(h.track) })),
+    playlists: backup.playlists.map(p => ({ ...p, tracks: p.tracks.map(recheck) })) };
 }
 export async function exportLibrary(library: Library) {
   const text = JSON.stringify(library, null, 2);

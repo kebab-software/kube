@@ -1,7 +1,6 @@
 import { mkdir, readdir, readFile, writeFile, copyFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 const { releaseVersion } = createRequire(import.meta.url)('./release-version.cjs');
 const tag = process.env.RELEASE_TAG;
@@ -13,7 +12,7 @@ async function files(directory) { const entries = await readdir(directory, { wit
 const all = await files('build-artifacts');
 const apk = all.filter(f => f.endsWith('.apk') && f.includes('kube-android-release'));
 if (apk.length !== 1) throw new Error('Expected exactly one signed release APK');
-const apkName = `kube-${version}-android.apk`;
+const apkName = 'Kube-v' + version + '.apk';
 await copyFile(apk[0], path.join('release-assets', apkName));
 for (const file of all.filter(f => /\.(exe|dmg|AppImage|zip|blockmap|aab)$/.test(f) || /latest[^/\\]*\.yml$/.test(f))) {
   const destination = path.join('release-assets', path.basename(file));
@@ -22,8 +21,8 @@ for (const file of all.filter(f => /\.(exe|dmg|AppImage|zip|blockmap|aab)$/.test
 }
 for (const extension of ['.exe','.dmg','.AppImage','.zip','.aab']) if (!(await readdir('release-assets')).some(f => f.endsWith(extension))) throw new Error(`Missing release format ${extension}`);
 for (const file of ['latest.yml','latest-linux.yml','latest-mac.yml']) if (!(await readdir('release-assets')).includes(file)) throw new Error(`Missing update feed ${file}`);
-const zip = spawnSync('zip', ['-qr', path.resolve('release-assets/kube-web.zip'), '.'], { cwd: 'build-artifacts/kube-web', stdio: 'inherit' });
-if (zip.status !== 0) throw new Error('Could not package web build');
+const webName = 'Kube-v' + version + '.html';
+await copyFile(path.join('build-artifacts/kube-web', webName), path.join('release-assets', webName));
 const hash = data => createHash('sha256').update(data).digest('hex');
 await writeFile('release-assets/android-update.json', JSON.stringify({ version, versionCode, url: `https://github.com/${repo}/releases/download/${encodeURIComponent(tag)}/${apkName}`, sha256: hash(await readFile(apk[0])) }, null, 2));
 await writeFile('release-assets/build-info.json', JSON.stringify({ version, tag, commit: process.env.GITHUB_SHA, run: `https://github.com/${repo}/actions/runs/${process.env.GITHUB_RUN_ID}`, android: 'Persistent release signing key', macAutomaticUpdates: 'Requires Developer ID signing credentials' }, null, 2));

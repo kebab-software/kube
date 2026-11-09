@@ -10,7 +10,7 @@ Open [Actions](https://github.com/kebab-software/kube/actions/workflows/build.ym
 choose a run, and download its artifacts when it completes:
 
 - `kube-web`: static web build.
-- `kube-android-debug`: installable debug APK.
+- `Kube-v<version>-debug.apk`: installable debug APK.
 - `kube-desktop-windows-latest`: Windows installer.
 - `kube-desktop-macos-latest`: unsigned macOS disk image.
 - `kube-desktop-ubuntu-latest`: Linux AppImage.
@@ -63,7 +63,7 @@ npm run android:open
 npm run build:android
 ```
 
-The debug APK is written to `android/app/build/outputs/apk/debug/app-debug.apk`.
+The debug APK is written to `android/app/build/outputs/apk/debug/Kube-v<version>-debug.apk`.
 `npm run build:android:release` builds a signed release APK and bundle, requiring
 the persistent signing environment described in [RELEASING.md](RELEASING.md).
 It fails if signing credentials are absent. Never commit keystores or passwords.

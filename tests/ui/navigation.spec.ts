@@ -18,7 +18,10 @@ test('compact player navigation and persistent playlist creation', async ({ page
 test('mobile layout keeps library and queue controls accessible', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await expect(page.getByRole('button', { name: 'Kube home' })).toBeVisible();
+  await page.getByRole('button', { name: 'Open navigation' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Artists', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Your artists' })).toBeVisible();
+  await page.getByRole('navigation', { name: 'Mobile navigation' }).getByRole('button', { name: 'Home' }).click();
   await expect(page.getByRole('navigation', { name: 'Library shortcuts' }).getByRole('button', { name: /Artists/ })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: 'test-results/kube-mobile.png', fullPage: true });

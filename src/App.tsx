@@ -6,11 +6,14 @@ import { recommendations, rankRecommendations, type Recommendation } from './rec
 import { type Track, uniqueTracks, type Artist } from './model';
 import { Cover, Empty, Failure, IconButton, Loading, Modal, PlayerBar, TrackRow } from './components';
 import { Settings } from './Settings';
+import { Sidebar } from './components/ui/sidebar';
+import { useMusicLibrary } from './useMusicLibrary';
 import { UpdateNotice } from './UpdateNotice';
 
 type View = 'home' | 'search' | 'liked' | 'playlists' | 'history' | 'artists' | 'settings' | 'queue' | 'artist' | 'playlist';
 export function App() {
-  const { library, update, player, notice, notify, storageWarning } = useApp();
+  const { library: stored, update, player, notice, notify, storageWarning } = useApp();
+  const library = useMusicLibrary(stored, update);
   const playback = useSyncExternalStore(player.subscribe, player.snapshot);
   const [view, setView] = useState<View>('home');
   const [search, setSearch] = useState(''); const [query, setQuery] = useState('');
@@ -42,8 +45,9 @@ export function App() {
         if (controller.signal.aborted) return;
         setRecs(result.items); setResults(result.items.map(r => r.track)); setPartial(result.partial);
       } else if (view === 'search') {
-        const list = await new Invidious(library.settings).search(query, 1, controller.signal);
-        if (controller.signal.aborted) return; setResults(list); setHasMore(list.length > 0);
+        if (!query) return;
+        const list = await new Invidious(library.settings).searchPage(query, 1, controller.signal);
+        if (controller.signal.aborted) return; setResults(list.tracks); setHasMore(list.hasMore);
       } else if (artist) {
         const result = await new Invidious(library.settings).channel(artist.authorId, undefined, controller.signal);
         if (controller.signal.aborted) return; setResults(result.tracks); setContinuation(result.continuation); setHasMore(Boolean(result.continuation));
@@ -57,15 +61,15 @@ export function App() {
   async function loadMore() {
     const version = requestVersion.current; setMoreLoading(true); setError('');
     try {
-      if (view === 'search') { const list = await api.search(query, page + 1); if (version !== requestVersion.current) return; setResults(old => uniqueTracks([...old, ...list])); setPage(n => n + 1); setHasMore(list.length > 0); }
+      if (view === 'search') { const list = await api.searchPage(query, page + 1); if (version !== requestVersion.current) return; setResults(old => uniqueTracks([...old, ...list.tracks])); setPage(n => n + 1); setHasMore(list.hasMore); }
       else if (artist) { const result = await api.channel(artist.authorId, continuation); if (version !== requestVersion.current) return; setResults(old => uniqueTracks([...old, ...result.tracks])); setContinuation(result.continuation); setHasMore(Boolean(result.continuation)); }
     } catch (e) { if (version === requestVersion.current) setError((e as Error).message); } finally { setMoreLoading(false); }
   }
   async function radio(track: Track) {
     notify('Finding related tracks…');
     try {
-      const detail = await api.video(track.videoId);
-      const ranked = rankRecommendations(detail.related, library).map(r => r.track).filter(t => t.videoId !== track.videoId);
+      const related = await api.related(track.videoId);
+      const ranked = rankRecommendations(related, library).map(r => r.track).filter(t => t.videoId !== track.videoId);
       if (!ranked.length) { notify('This instance returned no related tracks for this song.'); return; }
       await player.play(track, [track, ...ranked]); navigate('queue'); notify('Track radio is ready');
     } catch (e) { notify((e as Error).message); }
@@ -82,12 +86,16 @@ export function App() {
     try {
       let id = importValue.trim(); if (id.includes('://')) id = new URL(id).searchParams.get('list') || '';
       const first = await api.playlist(id); let tracks = first.tracks;
-      if (!tracks.length) throw new Error('This playlist is empty, private, or unavailable.');
-      for (let p = 2; tracks.length < first.count && p <= 100; p++) {
-        const next = await api.playlist(id, p); const combined = uniqueTracks([...tracks, ...next.tracks]); if (!next.tracks.length || combined.length === tracks.length) break; tracks = combined;
+      let scanned = first.scanned;
+      for (let p = 2; scanned > 0 && scanned < first.count && p <= 100; p++) {
+        const next = await api.playlist(id, p);
+        if (!next.scanned) break;
+        scanned += next.scanned;
+        tracks = uniqueTracks([...tracks, ...next.tracks]);
       }
+      if (!tracks.length) throw new Error('No verified music was found in this playlist.');
       const newId = crypto.randomUUID(); update(old => ({ ...old, playlists: [...old.playlists, { id: newId, name: first.title.slice(0, 120), created: Date.now(), tracks }] }));
-      setPlaylistId(newId); navigate('playlist'); setImportModal(false); setImportValue(''); notify(`Imported ${tracks.length} tracks${tracks.length < first.count ? ` of ${first.count}; the instance did not return the rest` : ''}`);
+      setPlaylistId(newId); navigate('playlist'); setImportModal(false); setImportValue(''); notify('Imported ' + tracks.length + ' music tracks');
     } catch (e) { setImportError((e as Error).message); } finally { setImportBusy(false); }
   }
   function rows(tracks: Track[], reasons = false, removable = false) {
@@ -96,7 +104,7 @@ export function App() {
   const nav = [{ id: 'home', title: 'Listen now', icon: Home }, { id: 'search', title: 'Explore', icon: Search }, { id: 'liked', title: 'Liked songs', icon: Heart }, { id: 'playlists', title: 'Playlists', icon: Library }, { id: 'artists', title: 'Artists', icon: Users }, { id: 'history', title: 'Recently played', icon: Clock3 }] as const;
   const titles: Partial<Record<View, [string, string]>> = { search: [query ? `Results for “${query}”` : 'Search', 'Search for a song or artist.'], liked: ['Liked songs', `${library.liked.length} liked tracks.`], history: ['Recently played', 'Your listening history.'], artists: ['Your artists', 'Artists you follow.'], playlists: ['Your playlists', 'Saved on this device.'], queue: ['Up next', `${playback.queue.length} tracks in your listening session.`] };
   return <div className="app-shell">
-    <aside className="sidebar"><button className="brand" onClick={() => navigate('home')}><img src="./logo.png" alt="" /><span>Kube</span></button><span className="sidebar-label">MUSIC</span><nav aria-label="Main navigation">{nav.map(({ id, title, icon: Icon }, i) => <button key={id} className={`${view === id ? 'current' : ''} ${i === 2 ? 'nav-divider' : ''}`} onClick={() => navigate(id)}><Icon size={19} /><span>{title}</span>{id === 'liked' && library.liked.length > 0 && <small>{library.liked.length}</small>}</button>)}</nav><div className="sidebar-playlists"><div className="sidebar-label">PLAYLISTS <IconButton label="Create playlist" onClick={() => { setPlaylistName(''); setPlaylistModal('create'); }}><Plus size={15} /></IconButton></div>{library.playlists.slice(0, 8).map(p => <button key={p.id} className={view === 'playlist' && playlistId === p.id ? 'current' : ''} onClick={() => { setPlaylistId(p.id); navigate('playlist'); }}><span className="playlist-dot" />{p.name}</button>)}{!library.playlists.length && <p className="sidebar-hint">No playlists yet.</p>}</div><div className="sidebar-bottom"><button onClick={() => navigate('queue')}><ListMusic size={19} /> Queue</button><button className={view === 'settings' ? 'current' : ''} onClick={() => navigate('settings')}><SettingsIcon size={19} /> Settings</button></div></aside>
+    <Sidebar items={[...nav, { id: 'queue', title: 'Queue', icon: ListMusic }, { id: 'settings', title: 'Settings', icon: SettingsIcon }]} active={view} navigate={navigate} />
     <div className="workspace"><header className="topbar"><button className="mobile-brand" aria-label="Kube home" onClick={() => navigate('home')}><img src="./logo.png" alt="" /></button><form className="search-box" onSubmit={e => { e.preventDefault(); doSearch(search); }}><Search size={19} /><input aria-label="Search music" placeholder="Search songs, artists, and more" value={search} maxLength={300} onChange={e => setSearch(e.target.value)} /><kbd>↵</kbd></form><button className="connection-badge" onClick={() => navigate('settings')} title={library.settings.instance}><span className="connection-dot" /> Invidious <span className="connection-host">/ {new URL(library.settings.instance).hostname}</span></button><IconButton label="Show queue" active={view === 'queue'} onClick={() => navigate('queue')}><ListMusic size={20} /></IconButton></header>
     <main ref={mainRef}>
       {storageWarning && <Failure message={storageWarning} />}
@@ -121,6 +129,7 @@ export function App() {
           {view === 'artists' && (library.artists.length ? <div className="library-grid">{library.artists.map(a => <button className="library-card" key={a.authorId} onClick={() => openArtist(a)}><div className="artist-avatar"><Users size={36} /></div><h3>{a.author}</h3><span>Following <ArrowRight size={14} /></span></button>)}</div> : <Empty title="No followed artists">Open an artist from any song, then follow them to shape your recommendations.</Empty>)}
           {view === 'playlists' && (library.playlists.length ? <div className="library-grid">{library.playlists.map(p => <button className="library-card" key={p.id} onClick={() => { setPlaylistId(p.id); navigate('playlist'); }}><div className="playlist-cover"><ListMusic size={38} /></div><h3>{p.name}</h3><span>{p.tracks.length} tracks <ArrowRight size={14} /></span></button>)}</div> : <Empty title="No playlists yet">Create your first playlist or import a public YouTube playlist.</Empty>)}
           {view === 'queue' && (playback.queue.length ? <><div className="queue-caption"><span>NOW & NEXT</span><button onClick={() => player.shuffle()}>Shuffle upcoming</button></div>{playback.queue.map((t, i) => <div className={`queue-item ${i === playback.index ? 'current' : ''}`} key={`${t.videoId}-${i}`}><span className="queue-index">{i === playback.index ? <Music2 size={17} /> : i + 1}</span><Cover track={t} /><div className="track-copy"><strong>{t.title}</strong><span>{t.author}</span></div><IconButton label={`Play queue track ${i + 1}`} onClick={() => void player.play(t, playback.queue.slice(i))}><Play size={17} /></IconButton>{i > playback.index && <><IconButton label={`Move track ${i + 1} up`} disabled={i === playback.index + 1} onClick={() => player.move(i, -1)}><ArrowUp size={16} /></IconButton><IconButton label={`Move track ${i + 1} down`} disabled={i === playback.queue.length - 1} onClick={() => player.move(i, 1)}><ArrowDown size={16} /></IconButton></>}<IconButton label={`Remove queue track ${i + 1}`} disabled={i === playback.index} onClick={() => player.remove(i)}><X size={17} /></IconButton></div>)}</> : <Empty title="Your queue is empty">Play a song or add tracks to your queue from the options menu.</Empty>)}
+          {!results.length && hasMore && (view === 'search' || view === 'artist') && <button className="load-more" disabled={moreLoading} onClick={() => void loadMore()}>Load more</button>}
         </>}
       </>}
 
