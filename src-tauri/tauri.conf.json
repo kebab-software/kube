@@ -1,0 +1,48 @@
+{
+  "productName": "Kube Desktop",
+  "identifier": "app.kube.music.desktop",
+  "version": "../package.json",
+  "build": {
+    "frontendDist": "../dist",
+    "beforeBuildCommand": "npm run build",
+    "beforeDevCommand": "npm run dev -- --port 5173 --strictPort",
+    "devUrl": "http://127.0.0.1:5173"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Kube",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 680,
+        "minHeight": 480,
+        "decorations": false,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "createUpdaterArtifacts": false,
+    "category": "Music"
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/kebab-software/kube/releases/latest/download/tauri-update.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDk4MDkzNjJDRTg1OUM2NEYKUldSUHhsbm9MRFlKbUw4NDRIeEIrM2gwcFJGMWZ3em9HTGNuM1BzZEZDdmRscTV3a1hMQWVLT0gK"
+    }
+  }
+}

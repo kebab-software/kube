@@ -41,3 +41,11 @@
   .listen-heading { flex-wrap: wrap; }
   .app-shell { padding-bottom: calc(162px + env(safe-area-inset-bottom)); }
 }
+
+.window-controls { display: flex; flex: none; align-items: center; border-left: 1px solid #393939; padding-left: 6px; }
+.window-controls button, .window-grip { width: 34px; height: 36px; display: grid; place-items: center; padding: 0; background: transparent; border: 0; border-radius: 6px; color: #ccc; }
+.window-controls button:hover { background: #373737; color: white; }
+.window-controls button:last-child:hover { background: #bb3841; }
+.window-grip { cursor: grab; color: #888; user-select: none; }
+.window-grip svg { pointer-events: none; }
+.topbar:has(.window-controls) .search-box { min-width: 0; }

@@ -101,3 +101,7 @@ clients to retrieve their update feeds and installers.
 
 
 For each requested feature batch, push the tested changes, publish an increasing stable release with notes covering features and fixes, and verify its attached downloads. The workflow appends a download table using the URLs returned by GitHub. The macOS ZIP is an updater dependency. Users can download the DMG directly. For the web edition, download the HTML and open it in a browser.
+
+Desktop downloads from v0.3.0 use Tauri. The download table links to Kube Desktop for Windows, macOS and Linux. Existing Electron installations use the legacy update feeds. To switch to Tauri, export the library in Settings, install Kube Desktop, then import the backup. The two apps use separate local storage.
+
+Tauri verifies updates with the public key in src-tauri/tauri.conf.json. The corresponding private key is in the TAURI_SIGNING_PRIVATE_KEY repository secret. Keep its private backup safe. The release workflow attaches tauri-update.json after uploading the signed desktop packages.

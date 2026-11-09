@@ -79,10 +79,10 @@ jobs:
           set -euo pipefail
           gh release view "$RELEASE_TAG" --json isDraft --jq 'if .isDraft then error("Publish the release first") else true end'
           for file in release-assets/*; do
-            case "$file" in *latest*.yml|*/android-update.json) continue ;; esac
+            case "$file" in *latest*.yml|*/android-update.json|*/tauri-update.json) continue ;; esac
             gh release upload "$RELEASE_TAG" "$file" --clobber
           done
-          gh release upload "$RELEASE_TAG" release-assets/latest*.yml release-assets/android-update.json --clobber
+          gh release upload "$RELEASE_TAG" release-assets/latest*.yml release-assets/android-update.json release-assets/tauri-update.json --clobber
           node scripts/release-downloads.mjs
       - name: Save dry-run release package
         if: github.event_name == 'workflow_dispatch' && inputs.dry_run

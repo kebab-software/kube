@@ -18,3 +18,7 @@ playwright-report/
 electron/release-config.json
 *.p12
 *.pfx
+
+src-tauri/target/
+src-tauri/gen/
+tauri-release/

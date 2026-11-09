@@ -1,6 +1,6 @@
 # Kube application
 
-React + TypeScript + Vite, with Electron desktop packaging and Capacitor Android.
+React + TypeScript + Vite, with Tauri 2 desktop packaging and Capacitor Android.
 The existing `website/` landing page and `brand/` assets are separate from the application.
 
 ## GitHub builds
@@ -45,12 +45,7 @@ npm run desktop
 npm run build:desktop
 ```
 
-Electron Builder produces the host platform's installer in `release/`: NSIS on
-Windows, DMG on macOS, AppImage on Linux. Build each platform on its corresponding
-OS. Distribution signing/notarization requires your own certificates and release
-configuration. The renderer runs sandboxed with Node integration disabled. A
-restricted preload bridge permits HTTPS Invidious JSON requests without disabling
-Chromium web security.
+Install the Tauri system prerequisites for your OS and stable Rust. Run npm run desktop for development and npm run build:desktop for an installer. Bundles are written under src-tauri/target/release/bundle. Release CI also builds the Electron update channel for existing installations.
 
 ## Android
 

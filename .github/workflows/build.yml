@@ -139,14 +139,15 @@ jobs:
           CSC_LINK: ${{ (matrix.os == 'macos-latest' && secrets.MAC_CSC_LINK) || (matrix.os == 'windows-latest' && secrets.WIN_CSC_LINK) || '' }}
         shell: bash
         run: node scripts/prepare-release.mjs "$RELEASE_VERSION"
-      - name: Build desktop installer
+      - name: Build legacy Electron update
+        if: inputs.release_version != ''
         shell: bash
         run: |
           # electron-builder treats an empty CSC_LINK as a certificate path.
           for variable in CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
             if [ -z "${!variable}" ]; then unset "$variable"; fi
           done
-          npm run build:desktop
+          npm run build:desktop:legacy
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: ${{ inputs.release_version != '' && secrets.MAC_CSC_LINK != '' && 'true' || 'false' }}
           CSC_LINK: ${{ inputs.release_version != '' && ((matrix.os == 'macos-latest' && secrets.MAC_CSC_LINK) || (matrix.os == 'windows-latest' && secrets.WIN_CSC_LINK)) || '' }}
@@ -154,15 +155,44 @@ jobs:
           APPLE_ID: ${{ inputs.release_version != '' && secrets.APPLE_ID || '' }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ inputs.release_version != '' && secrets.APPLE_APP_SPECIFIC_PASSWORD || '' }}
           APPLE_TEAM_ID: ${{ inputs.release_version != '' && secrets.APPLE_TEAM_ID || '' }}
+      - name: Install Linux WebKit dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libfuse2
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Build Tauri desktop
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ inputs.release_version }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ inputs.release_version != '' && secrets.TAURI_SIGNING_PRIVATE_KEY || '' }}
+        run: |
+          case "$RUNNER_OS" in
+            Windows) bundles=nsis ;;
+            macOS) bundles=app,dmg ;;
+            Linux) bundles=appimage ;;
+          esac
+          config='{}'
+          if [ -n "$RELEASE_VERSION" ]; then config='{"bundle":{"createUpdaterArtifacts":true}}'; fi
+          printf '%s' "$config" > tauri-build-options.json
+          npm run build:desktop -- --bundles "$bundles" --config tauri-build-options.json
+          node scripts/collect-tauri.mjs
+      - name: Verify native Windows frame
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/test-desktop-window.ps1
       - uses: actions/upload-artifact@v7
         if: inputs.release_version == ''
         with:
           archive: false
           if-no-files-found: error
           path: |
-            release/*.exe
-            release/*.dmg
-            release/*.AppImage
+            tauri-release/*.exe
+            tauri-release/*.dmg
+            tauri-release/*.AppImage
       - uses: actions/upload-artifact@v4
         if: inputs.release_version != ''
         with:
@@ -176,3 +206,4 @@ jobs:
             release/*.zip
             release/*.blockmap
             release/latest*.yml
+            tauri-release/*

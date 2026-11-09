@@ -1,3 +1,4 @@
+import { isTauri, invoke } from '@tauri-apps/api/core';
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { trackSchema, tracksFrom, type Track, type Settings } from './model';
 import { hasMusicMetadata, mapMusicPage } from './music';
@@ -22,7 +23,8 @@ export async function requestJson(url: string, signal?: AbortSignal): Promise<un
   try {
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
     let result: unknown;
-    if (window.kubeDesktop) result = await window.kubeDesktop.request(url);
+    if (isTauri()) result = await invoke('request_json', { input: url });
+    else if (window.kubeDesktop) result = await window.kubeDesktop.request(url);
     else if (Capacitor.isNativePlatform()) {
       const r = await CapacitorHttp.get({ url, connectTimeout: 12000, readTimeout: 18000, responseType: 'json', headers: { Accept: 'application/json' } });
       if (r.status < 200 || r.status >= 300) throw new ApiError(`Instance returned HTTP ${r.status}. It may be unavailable or rate-limited.`);

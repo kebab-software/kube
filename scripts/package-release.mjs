@@ -14,7 +14,7 @@ const apk = all.filter(f => f.endsWith('.apk') && f.includes('kube-android-relea
 if (apk.length !== 1) throw new Error('Expected exactly one signed release APK');
 const apkName = 'Kube-v' + version + '.apk';
 await copyFile(apk[0], path.join('release-assets', apkName));
-for (const file of all.filter(f => /\.(exe|dmg|AppImage|zip|blockmap|aab)$/.test(f) || /latest[^/\\]*\.yml$/.test(f))) {
+for (const file of all.filter(f => /\.(exe|dmg|AppImage|zip|blockmap|aab|sig|tar\.gz)$/.test(f) || /latest[^/\\]*\.yml$/.test(f))) {
   const destination = path.join('release-assets', path.basename(file));
   if ((await readdir('release-assets')).includes(path.basename(file))) throw new Error(`Duplicate release filename: ${path.basename(file)}`);
   await copyFile(file, destination);
@@ -26,6 +26,18 @@ await copyFile(path.join('build-artifacts/kube-web', webName), path.join('releas
 const hash = data => createHash('sha256').update(data).digest('hex');
 await writeFile('release-assets/android-update.json', JSON.stringify({ version, versionCode, url: `https://github.com/${repo}/releases/download/${encodeURIComponent(tag)}/${apkName}`, sha256: hash(await readFile(apk[0])) }, null, 2));
 await writeFile('release-assets/build-info.json', JSON.stringify({ version, tag, commit: process.env.GITHUB_SHA, run: `https://github.com/${repo}/actions/runs/${process.env.GITHUB_RUN_ID}`, android: 'Persistent release signing key', macAutomaticUpdates: 'Requires Developer ID signing credentials' }, null, 2));
+const platforms = {};
+for (const file of await readdir('release-assets')) {
+  const signature = file.match(/^Kube-Desktop-v[\d.]+-(windows|darwin|linux)-(x86_64|aarch64)\.(?:exe|app\.tar\.gz|AppImage)\.sig$/);
+  if (!signature) continue;
+  const binary = file.slice(0, -4);
+  platforms[signature[1] + '-' + signature[2]] = {
+    signature: (await readFile(path.join('release-assets', file), 'utf8')).trim(),
+    url: 'https://github.com/' + repo + '/releases/download/' + encodeURIComponent(tag) + '/' + binary,
+  };
+}
+if (Object.keys(platforms).length !== 3) throw new Error('Expected three signed Tauri desktop packages');
+await writeFile('release-assets/tauri-update.json', JSON.stringify({ version, platforms }, null, 2));
 const sums = [];
 for (const file of (await readdir('release-assets')).sort()) sums.push(`${hash(await readFile(path.join('release-assets', file)))}  ${file}`);
 await writeFile('release-assets/SHA256SUMS.txt', sums.join('\n') + '\n');
