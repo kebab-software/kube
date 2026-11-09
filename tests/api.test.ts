@@ -17,9 +17,12 @@ describe('Invidious client', () => {
       { videoId: 'abcdefghij1', title: 'Interview about music', genre: 'People & Blogs' },
       { videoId: 'abcdefghij2', title: 'Concert', genre: 'Music' },
       { videoId: 'abcdefghij3', title: 'Performance', genre: 'Entertainment', musicTracks: [{ song: 'Live track' }] },
+      { videoId: 'abcdefghij4', title: 'Single (Official Audio)', genre: '', keywords: ['pop'] },
+      { videoId: 'abcdefghij5', title: 'Interview about pop', genre: '', keywords: ['pop'] },
+      { videoId: 'abcdefghij6', title: 'Trailer (Official Video)', genre: 'Gaming', keywords: ['music'] },
     ];
     vi.spyOn(api, 'get').mockImplementation(async path => path === 'search' ? clips : clips.find(clip => path.endsWith(clip.videoId)));
-    expect((await api.search('artist')).map(t => t.title)).toEqual(['Concert', 'Performance']);
+    expect((await api.search('artist')).map(t => t.title)).toEqual(['Concert', 'Performance', 'Single (Official Audio)']);
     await expect(api.video(clips[0].videoId)).rejects.toThrow('music metadata');
   });
   it('routes audio through the selected instance with local proxy enabled', () => {
