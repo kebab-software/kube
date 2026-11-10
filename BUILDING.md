@@ -150,3 +150,9 @@ For hosting, place the Node server behind an HTTPS reverse proxy. Set HOST and P
 A downloaded standalone HTML file needs the HTTPS address of that server in Settings → Music catalog. A release download does not provision a public catalog relay.
 
 The release also includes a standalone Kube-Web-Server-v<version>.mjs. Place it beside Kube-v<version>.html and run node Kube-Web-Server-v<version>.mjs with Node.js 22 or newer. Open http://127.0.0.1:4173 for the web app and catalog relay.
+
+
+## Cloudflare deployment
+The hosted app is https://kube-music.123058.workers.dev. Its static files and restricted catalog relay are served by one Cloudflare Worker.
+Run npm run deploy:web after signing in with npx cf auth login. cloudflare.config.ts and the cloudflare Vite build mode define this deployment. Normal Android and desktop builds use the ordinary Vite mode.
+The relay accepts only catalog JSON requests, strips browser credentials, limits request and response sizes, and logs bounded error diagnostics.

@@ -22,3 +22,5 @@ electron/release-config.json
 src-tauri/target/
 src-tauri/gen/
 tauri-release/
+
+.cloudflare/
