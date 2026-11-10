@@ -7,9 +7,16 @@ export function hasMusicMetadata(raw: Record<string, unknown>) {
   // Some instances return only the publisher's title and keyword metadata.
   if (typeof raw.genre === 'string' && raw.genre.trim()) return false;
   if (typeof raw.title !== 'string' || !Array.isArray(raw.keywords)) return false;
-  const releaseLabel = /[(\[]\s*official (?:audio|music video|lyric video|video)\s*[)\]]/i;
-  const musicTag = /^(?:music|music video|pop|rock|hip[- ]hop|rap|electronic|dance music|r&b|jazz|classical music|country music|reggae|indie pop|heavy metal|soundtrack)$/i;
-  return releaseLabel.test(raw.title) && raw.keywords.some(tag => typeof tag === 'string' && musicTag.test(tag.trim()));
+  const title = raw.title;
+  if (/\b(interview|reaction|review|tutorial|trailer|news|podcast|gameplay)\b/i.test(title)) return false;
+  const explicitRelease = /\b(?:official\s+(?:music\s+video|audio|lyric\s+video)|lyric\s+video|visuali[sz]er)\b/i;
+  if (explicitRelease.test(title)) return true;
+  const releaseLabel = /\b(?:official\s+video|lyrics|live performance|remix|acoustic|music video)\b/i;
+  const musicTag = /\b(?:music|pop|rock|hip[- ]hop|rap|electronic|electro|dance|r&b|jazz|classical|country|reggae|indie|metal|soundtrack|album|song|records)\b/i;
+  const publisher = typeof raw.author === 'string' && /(?: - Topic|VEVO)$/i.test(raw.author);
+  return (releaseLabel.test(title) || publisher) &&
+    raw.keywords.some(tag => typeof tag === 'string' && musicTag.test(tag));
+
 }
 
 export async function mapMusicPage<T, R>(items: T[], lookup: (item: T) => Promise<R>, signal?: AbortSignal) {

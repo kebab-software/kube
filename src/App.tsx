@@ -48,7 +48,7 @@ export function App() {
       } else if (view === 'search') {
         if (!query) return;
         const list = await new Invidious(library.settings).searchPage(query, 1, controller.signal);
-        if (controller.signal.aborted) return; setResults(list.tracks); setHasMore(list.hasMore);
+        if (controller.signal.aborted) return; setResults(list.tracks); setHasMore(list.hasMore); setPage(list.nextPage - 1);
       } else if (artist) {
         const result = await new Invidious(library.settings).channel(artist.authorId, undefined, controller.signal);
         if (controller.signal.aborted) return; setResults(result.tracks); setContinuation(result.continuation); setHasMore(Boolean(result.continuation));
@@ -62,7 +62,7 @@ export function App() {
   async function loadMore() {
     const version = requestVersion.current; setMoreLoading(true); setError('');
     try {
-      if (view === 'search') { const list = await api.searchPage(query, page + 1); if (version !== requestVersion.current) return; setResults(old => uniqueTracks([...old, ...list.tracks])); setPage(n => n + 1); setHasMore(list.hasMore); }
+      if (view === 'search') { const list = await api.searchPage(query, page + 1); if (version !== requestVersion.current) return; setResults(old => uniqueTracks([...old, ...list.tracks])); setPage(list.nextPage - 1); setHasMore(list.hasMore); }
       else if (artist) { const result = await api.channel(artist.authorId, continuation); if (version !== requestVersion.current) return; setResults(old => uniqueTracks([...old, ...result.tracks])); setContinuation(result.continuation); setHasMore(Boolean(result.continuation)); }
     } catch (e) { if (version === requestVersion.current) setError((e as Error).message); } finally { setMoreLoading(false); }
   }

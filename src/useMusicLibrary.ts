@@ -7,7 +7,7 @@ export function useMusicLibrary(stored: Library, update: (fn: (old: Library) => 
   const latest = useRef(update);
   latest.current = update;
   const pending = uniqueTracks([...stored.liked, ...stored.history.map(h => h.track), ...stored.playlists.flatMap(p => p.tracks)])
-    .filter(t => t.musicVerified === undefined);
+    .filter(t => t.musicVerified !== true);
   const ids = pending.map(t => t.videoId).join(',');
   useEffect(() => {
     if (!ids) return;

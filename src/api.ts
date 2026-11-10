@@ -1,6 +1,6 @@
 import { isTauri, invoke } from '@tauri-apps/api/core';
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
-import { trackSchema, tracksFrom, type Track, type Settings } from './model';
+import { trackSchema, tracksFrom, uniqueTracks, type Track, type Settings } from './model';
 import { hasMusicMetadata, mapMusicPage } from './music';
 import type { UpdateStatus } from './update-types';
 
@@ -64,7 +64,6 @@ export class Invidious {
       catch (error) {
         signal?.throwIfAborted();
         if (error instanceof ApiError && /HTTP (404|410)/.test(error.message)) return undefined;
-        if (error instanceof ApiError && /HTTP 429/.test(error.message)) throw error;
         failures++;
         failure = error;
         return undefined;
@@ -74,11 +73,33 @@ export class Invidious {
     return verified.filter((t): t is Track => Boolean(t?.musicVerified && !t.liveNow));
   }
   async trending(signal?: AbortSignal) {
-    return this.musicPage(await this.get('trending', { type: 'music' }, signal), signal);
+    try {
+      const tracks = await this.musicPage(await this.get('trending', { type: 'music' }, signal), signal);
+      if (tracks.length >= 8) return tracks;
+      const fallback = await this.search('official music video', 1, signal);
+      return uniqueTracks([...tracks, ...fallback]);
+    } catch {
+      signal?.throwIfAborted();
+      return this.search('official music video', 1, signal);
+    }
   }
   async searchPage(query: string, page = 1, signal?: AbortSignal) {
-    const rows = await this.get('search', { q: query, type: 'video', page: String(page) }, signal);
-    return { tracks: await this.musicPage(rows, signal), hasMore: Array.isArray(rows) && rows.length > 0 };
+    let tracks: Track[] = [];
+    let nextPage = page;
+    let hasMore = true;
+    for (let scanned = 0; scanned < 3 && tracks.length < 12 && hasMore; scanned++) {
+      try {
+        const rows = await this.get('search', { q: query, type: 'video', page: String(nextPage) }, signal);
+        hasMore = Array.isArray(rows) && rows.length > 0;
+        tracks = uniqueTracks([...tracks, ...await this.musicPage(rows, signal)]);
+        nextPage++;
+      } catch (error) {
+        signal?.throwIfAborted();
+        if (!tracks.length) throw error;
+        break;
+      }
+    }
+    return { tracks, hasMore, nextPage };
   }
   async search(query: string, page = 1, signal?: AbortSignal) {
     return (await this.searchPage(query, page, signal)).tracks;

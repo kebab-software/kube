@@ -55,6 +55,7 @@ export async function recommendations(api: Invidious, library: Library, signal?:
   const results = await Promise.allSettled(requests);
   const tracks = results.flatMap(r => r.status === 'fulfilled' ? r.value : []);
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+  if (!tracks.length) tracks.push(...uniqueTracks([...library.liked, ...library.history.map(h => h.track)]).filter(t => t.musicVerified));
   if (!tracks.length) throw new Error('Could not load music from this instance. Check the connection in Settings or try searching.');
   return { items: rankRecommendations(tracks, library, relatedIds), partial: results.some(r => r.status === 'rejected') };
 }
