@@ -14,7 +14,8 @@ The React application builds for web, Android, Windows, macOS, and Linux.
 
 - [Build and development instructions](BUILDING.md)
 - [Release workflow and automatic updates](RELEASING.md)
-- [Open the web app](https://kube-music.123058.workers.dev)
+- [Kube website](https://getkube.jamesd.uk)
+- [Open the web app](https://kube.jamesd.uk)
 - [Download Kube for your platform](https://github.com/getkube/kube/releases/latest)
 - [Development builds](https://github.com/getkube/kube/actions/workflows/build.yml)
 

@@ -6,6 +6,7 @@ export default defineConfig({
     entrypoint: './cloudflare/worker.ts',
     compatibilityDate: '2026-11-10',
     workersDev: true,
+    domains: ['kube.jamesd.uk'],
     assets: { runWorkerFirst: ['/catalog/*', '/health'] },
     observability: { enabled: true, traces: { enabled: true } },
   },

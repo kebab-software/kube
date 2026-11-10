@@ -153,6 +153,8 @@ The release also includes a standalone Kube-Web-Server-v<version>.mjs. Place it 
 
 
 ## Cloudflare deployment
-The hosted app is https://kube-music.123058.workers.dev. Its static files and restricted catalog relay are served by one Cloudflare Worker.
+The hosted app is https://kube.jamesd.uk. Its static files and restricted catalog relay are served by one Cloudflare Worker.
 Run npm run deploy:web after signing in with npx cf auth login. cloudflare.config.ts and the cloudflare Vite build mode define this deployment. Normal Android and desktop builds use the ordinary Vite mode.
 The relay accepts only catalog JSON requests, strips browser credentials, limits request and response sizes, and logs bounded error diagnostics.
+
+The landing page is hosted by the kube-website Pages project at https://getkube.jamesd.uk. It deploys the website directory on pushes to main. The app custom domain https://kube.jamesd.uk is declared in cloudflare.config.ts.

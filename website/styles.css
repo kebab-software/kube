@@ -583,3 +583,11 @@ body {
   .stats-grid { grid-template-columns: 1fr; }
   .footer-bottom { flex-direction: column; text-align: center; }
 }
+
+.install-group { display: inline-flex; align-items: stretch; max-width: 100%; }
+.install-group .install-button { border-radius: 10px 0 0 10px; }
+.other-os { display: inline-flex; align-items: center; justify-content: center; padding: 12px 16px; border: 1px solid #ffffff35; border-left: 0; border-radius: 0 10px 10px 0; text-decoration: none; font-size: 12px; font-weight: 600; color: inherit; background: #ffffff0a; white-space: nowrap; }
+.other-os:hover { background: #ffffff20; }
+.install-group a { min-height: 48px; }
+.install-group a:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+@media(max-width:480px) { .hero-actions,.cta-actions { flex-wrap: wrap; } .other-os { padding: 12px; } }
