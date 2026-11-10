@@ -4,13 +4,13 @@ import { mkdir, writeFile, readFile, copyFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 process.chdir(fileURLToPath(new URL('..', import.meta.url)));
 const rounded = await readFile('brand/logo-rounded.png');
-const icon = await readFile('assets/favicons/dark.png');
+const icon = await readFile('assets/favicons/dark-transparent.png');
 await mkdir('build/icons', { recursive: true });
 await mkdir('public', { recursive: true });
 const png = (input, size) => sharp(input).resize(size, size).png().toBuffer();
 await writeFile('public/logo.png', await png(rounded, 192));
 for (const size of [32, 180, 192, 512]) await writeFile(`public/icon-${size}.png`, await png(icon, size));
-await writeFile('public/icon-maskable.png', await png(icon, 512));
+await writeFile('public/icon-maskable.png', await sharp(icon).resize(410,410).extend({top:51,bottom:51,left:51,right:51,background:'#202020'}).flatten({background:'#202020'}).png().toBuffer());
 await writeFile('build/icons/icon.png', await png(icon, 512));
 // ICO directory with PNG frames (supported by current Windows and Electron).
 const sizes = [16, 24, 32, 48, 64, 128, 256];
@@ -46,7 +46,7 @@ for (const [density, scale] of [['mdpi',1],['hdpi',1.5],['xhdpi',2],['xxhdpi',3]
   for (let i = 0; i < mono.data.length; i += 4) mono.data[i] = mono.data[i + 1] = mono.data[i + 2] = 255;
   await sharp(mono.data, { raw: mono.info }).png().toFile(`${directory}/ic_launcher_monochrome.png`);
 }
-await writeFile(`${res}/values/ic_launcher_background.xml`, '<?xml version="1.0" encoding="utf-8"?><resources><color name="ic_launcher_background">#FFFFFF</color></resources>\n');
+await writeFile(`${res}/values/ic_launcher_background.xml`, '<?xml version="1.0" encoding="utf-8"?><resources><color name="ic_launcher_background">#202020</color></resources>\n');
 for (const version of [26, 33]) {
   const directory = `${res}/mipmap-anydpi-v${version}`; await mkdir(directory, { recursive: true });
   const xml = `<?xml version="1.0" encoding="utf-8"?>\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@color/ic_launcher_background"/><foreground android:drawable="@mipmap/ic_launcher_foreground"/>${version === 33 ? '<monochrome android:drawable="@mipmap/ic_launcher_monochrome"/>' : ''}</adaptive-icon>\n`;
@@ -57,4 +57,4 @@ for (const [size, name] of [[32, '32x32'], [128, '128x128'], [256, '128x128@2x']
   await writeFile('src-tauri/icons/' + name + '.png', await sharp(icon).resize(size, size).toColourspace('srgb').ensureAlpha().png().toBuffer());
 }
 for (const name of ['icon.ico', 'icon.icns']) await copyFile('build/icons/' + name, 'src-tauri/icons/' + name);
-console.log('Generated app icons from assets/favicons/dark.png and in-app logos from brand/.');
+console.log('Generated app icons from assets/favicons/dark-transparent.png and in-app logos from brand/.');
