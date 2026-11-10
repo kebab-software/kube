@@ -21,7 +21,7 @@ export function rankRecommendations(candidates: Track[], library: Library, relat
     affinities.set(artistKey(h.track), (affinities.get(artistKey(h.track)) || 0) + weight);
     recentlyPlayed.set(h.track.videoId, Math.min(age, recentlyPlayed.get(h.track.videoId) ?? Infinity));
   }
-  const scored = uniqueTracks(candidates).filter(t => !hidden.has(t.videoId) && t.lengthSeconds >= 45 && t.lengthSeconds <= 3600 && !t.liveNow).map(track => {
+  const scored = uniqueTracks(candidates).filter(t => !hidden.has(t.videoId) && (t.lengthSeconds >= 45 || (t.musicSource === 'youtube-music' && t.lengthSeconds === 0)) && t.lengthSeconds <= 3600 && !t.liveNow).map(track => {
     const key = artistKey(track);
     const affinity = Math.max(-3, Math.min(8, affinities.get(key) || 0));
     const familiar = affinity > 0 || followed.has(key);

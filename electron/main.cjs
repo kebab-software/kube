@@ -33,6 +33,18 @@ app.whenReady().then(() => {
     while (true) { const part = await reader.read(); if (part.done) break; bytes += part.value.length; if (bytes > 10_000_000) { await reader.cancel(); throw new Error('Response too large'); } chunks.push(Buffer.from(part.value)); }
     return JSON.parse(Buffer.concat(chunks).toString('utf8'));
   });
+
+  ipcMain.handle('kube:catalog', async (event, input, body) => {
+    if (event.senderFrame?.url !== 'kube://app/index.html') throw new Error('Untrusted request');
+    if (typeof input !== 'string' || input.length > 4096 || typeof body !== 'string' || body.length > 100000) throw new Error('Invalid request');
+    const url = new URL('https://music.youtube.com' + input);
+    if (url.hostname !== 'music.youtube.com' || !/^\/youtubei\/v1\/(search|browse|next|player)$/.test(url.pathname)) throw new Error('Invalid catalog path');
+    const r = await fetch(url, { method: 'POST', body, redirect: 'error', signal: AbortSignal.timeout(20000), headers: { 'Content-Type': 'application/json', Origin: 'https://music.youtube.com' } });
+    if (!r.ok) throw new Error('YouTube Music HTTP ' + r.status);
+    const reader = r.body.getReader(); const chunks = []; let bytes = 0;
+    while (true) { const item = await reader.read(); if (item.done) break; bytes += item.value.length; if (bytes > 10000000) { await reader.cancel(); throw new Error('Catalog response too large'); } chunks.push(Buffer.from(item.value)); }
+    return Buffer.concat(chunks).toString('utf8');
+  });
   createWindow();
   require('./updates.cjs').configureUpdates(() => window);
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });

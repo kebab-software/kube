@@ -58,7 +58,7 @@ export function App() {
     return () => controller.abort();
     // Library changes are applied on refresh so liking a song never replaces the screen mid-click.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, query, artist?.authorId, library.settings.instance, library.settings.region, refresh]);
+  }, [view, query, artist?.authorId, library.settings.instance, library.settings.region, library.settings.catalogProxy, refresh]);
   async function loadMore() {
     const version = requestVersion.current; setMoreLoading(true); setError('');
     try {

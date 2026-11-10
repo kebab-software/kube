@@ -1,11 +1,13 @@
+import { catalogSearch, catalogHome, catalogArtist, catalogRelated, catalogClassify } from './catalog';
 import { isTauri, invoke } from '@tauri-apps/api/core';
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
-import { trackSchema, tracksFrom, uniqueTracks, type Track, type Settings } from './model';
-import { hasMusicMetadata, mapMusicPage } from './music';
+import { trackSchema, tracksFrom, type Track, type Settings } from './model';
+import { mapMusicPage } from './music';
 import type { UpdateStatus } from './update-types';
 
 declare global {
   interface Window { kubeDesktop?: {
+    catalogRequest?: (path: string, body: string) => Promise<string>;
     request: (url: string) => Promise<unknown>;
     updateStatus: () => Promise<UpdateStatus>; checkUpdate: () => Promise<UpdateStatus>;
     installUpdate: () => Promise<void>; openReleases: () => Promise<void>;
@@ -59,8 +61,8 @@ export class Invidious {
     const candidates = tracksFrom(rows);
     let failures = 0;
     let failure: unknown;
-    const verified = await mapMusicPage(candidates, async track => {
-      try { return (await this.details(track.videoId, signal)).track; }
+    const verified = await mapMusicPage(candidates, async (track): Promise<Track | undefined> => {
+      try { return await catalogClassify(this.settings, track, signal) ? { ...track, musicVerified: true, musicSource: 'youtube-music' as const } : undefined; }
       catch (error) {
         signal?.throwIfAborted();
         if (error instanceof ApiError && /HTTP (404|410)/.test(error.message)) return undefined;
@@ -72,42 +74,10 @@ export class Invidious {
     if (failures && failures === candidates.length) throw failure;
     return verified.filter((t): t is Track => Boolean(t?.musicVerified && !t.liveNow));
   }
-  async trending(signal?: AbortSignal) {
-    try {
-      const tracks = await this.musicPage(await this.get('trending', { type: 'music' }, signal), signal);
-      if (tracks.length >= 8) return tracks;
-      const fallback = await this.search('official music video', 1, signal);
-      return uniqueTracks([...tracks, ...fallback]);
-    } catch {
-      signal?.throwIfAborted();
-      return this.search('official music video', 1, signal);
-    }
-  }
-  async searchPage(query: string, page = 1, signal?: AbortSignal) {
-    let tracks: Track[] = [];
-    let nextPage = page;
-    let hasMore = true;
-    for (let scanned = 0; scanned < 3 && tracks.length < 12 && hasMore; scanned++) {
-      try {
-        const rows = await this.get('search', { q: query, type: 'video', page: String(nextPage) }, signal);
-        hasMore = Array.isArray(rows) && rows.length > 0;
-        tracks = uniqueTracks([...tracks, ...await this.musicPage(rows, signal)]);
-        nextPage++;
-      } catch (error) {
-        signal?.throwIfAborted();
-        if (!tracks.length) throw error;
-        break;
-      }
-    }
-    return { tracks, hasMore, nextPage };
-  }
-  async search(query: string, page = 1, signal?: AbortSignal) {
-    return (await this.searchPage(query, page, signal)).tracks;
-  }
-  async channel(id: string, continuation?: string, signal?: AbortSignal): Promise<{ tracks: Track[]; continuation?: string }> {
-    const data = await this.get(`channels/${encodeURIComponent(id)}/videos`, continuation ? { continuation } : {}, signal) as { videos?: unknown; continuation?: string };
-    return { tracks: await this.musicPage(data.videos, signal), continuation: data.continuation };
-  }
+  async trending(signal?: AbortSignal) { return catalogHome(this.settings, signal); }
+  async searchPage(query: string, page = 1, signal?: AbortSignal) { return catalogSearch(this.settings, query, page, signal); }
+  async search(query: string, page = 1, signal?: AbortSignal) { return (await this.searchPage(query, page, signal)).tracks; }
+  async channel(id: string, _continuation?: string, signal?: AbortSignal) { return catalogArtist(this.settings, id, signal); }
   async playlist(id: string, page = 1) {
     if (!/^[\w-]{10,100}$/.test(id)) throw new ApiError('Enter a valid YouTube playlist ID or URL.');
     const data = await this.get(`playlists/${id}`, { page: String(page) }) as { title?: string; videos?: unknown; videoCount?: number };
@@ -119,7 +89,7 @@ export class Invidious {
     const hit = cache.get(key);
     if (hit && hit.expires > Date.now()) return hit.data;
     const raw = await this.get(`videos/${id}`, {}, signal) as Record<string, unknown>;
-    const track = { ...trackSchema.parse(raw), musicVerified: hasMusicMetadata(raw) };
+    const track = trackSchema.parse(raw);
     const formats = (Array.isArray(raw.adaptiveFormats) ? raw.adaptiveFormats : []).flatMap((f: Record<string, unknown>) => {
       if (typeof f.type !== 'string' || !f.type.startsWith('audio/') || !/^\d+$/.test(String(f.itag))) return [];
       return [{ itag: String(f.itag), type: f.type, bitrate: Number(f.bitrate) || 0 }];
@@ -130,22 +100,21 @@ export class Invidious {
     return data;
   }
   async classify(track: Track, signal?: AbortSignal) {
-    return (await this.details(track.videoId, signal)).track.musicVerified === true;
+    return catalogClassify(this.settings, track, signal);
   }
   async video(id: string, signal?: AbortSignal) {
     const detail = await this.details(id, signal);
-    if (!detail.track.musicVerified || detail.track.liveNow) throw new ApiError('This video has no supported music metadata.');
+    if (!await catalogClassify(this.settings, detail.track, signal) || detail.track.liveNow) throw new ApiError('This video has no supported music metadata.');
     return detail;
   }
   async related(id: string, signal?: AbortSignal) {
-    const detail = await this.video(id, signal);
-    return this.musicPage(detail.related, signal);
+    return catalogRelated(this.settings, id, signal);
   }
   stream(id: string, itag: string) {
     return `${this.origin}/latest_version?${new URLSearchParams({ id, itag, local: 'true' })}`;
   }
   async health() {
-    const tracks = await this.search('music', 1);
+    const tracks = tracksFrom(await this.get('search', { q: 'music', type: 'video' }));
     if (!tracks.length) throw new ApiError('API responded, but returned no playable search results.');
     return `${tracks.length} search results received. Playback still depends on the instance’s media proxy.`;
   }

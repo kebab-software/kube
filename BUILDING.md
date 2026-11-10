@@ -141,3 +141,12 @@ References: [Invidious API](https://docs.invidious.io/api/),
 [official instances](https://docs.invidious.io/instances/),
 [Capacitor Android](https://capacitorjs.com/docs/android),
 [Media3 background playback](https://developer.android.com/media/media3/session/background-playback).
+
+
+## YouTube Music catalog for web
+Desktop and Android use native networking for catalog discovery. The web edition requires Kube's catalog relay because YouTube does not allow browser cross-origin catalog requests.
+Run npm run build followed by npm run serve. Open http://127.0.0.1:4173. For development, run npm run serve alongside npm run dev. The Vite proxy forwards catalog requests to port 4173.
+For hosting, place the Node server behind an HTTPS reverse proxy. Set HOST and PORT for your hosting environment. The server forwards only the four catalog API routes and forwards no browser cookies. Run an access-controlled server for personal use.
+A downloaded standalone HTML file needs the HTTPS address of that server in Settings → Music catalog. A release download does not provision a public catalog relay.
+
+The release also includes a standalone Kube-Web-Server-v<version>.mjs. Place it beside Kube-v<version>.html and run node Kube-Web-Server-v<version>.mjs with Node.js 22 or newer. Open http://127.0.0.1:4173 for the web app and catalog relay.

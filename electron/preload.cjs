@@ -1,5 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('kubeDesktop', {
+  catalogRequest: (path, body) => ipcRenderer.invoke('kube:catalog', path, body),
   request: url => ipcRenderer.invoke('kube:request', url),
   updateStatus: () => ipcRenderer.invoke('kube:update-status'),
   checkUpdate: () => ipcRenderer.invoke('kube:update-check'),

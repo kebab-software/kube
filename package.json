@@ -1,6 +1,6 @@
 {
   "name": "kube-music",
-  "version": "0.3.6",
+  "version": "0.4.0",
   "private": true,
   "description": "A private, local-first Invidious music player",
   "author": "Kube contributors",
@@ -29,7 +29,8 @@
     "android:open": "cap open android",
     "build:android": "npm run android:sync && node scripts/android-build.mjs",
     "build:android:release": "npm run android:sync && node scripts/android-build.mjs release",
-    "build:desktop:legacy": "npm run build && electron-builder --publish never"
+    "build:desktop:legacy": "npm run build && electron-builder --publish never",
+    "serve": "node scripts/web-server.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.0",
@@ -45,6 +46,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "tailwindcss": "^4.3.5",
+    "youtubei.js": "^18.3.0",
     "zod": "^4.0.0"
   },
   "devDependencies": {

@@ -1,10 +1,11 @@
+import { Capacitor } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
 import { librarySchema, defaultLibrary, type Library } from './model';
 const KEY = 'kube.library.v1';
 let pending = Promise.resolve();
 export async function loadLibrary(): Promise<{ library: Library; warning?: string }> {
   try {
-    const { value } = await Preferences.get({ key: KEY });
+    const value = Capacitor.isNativePlatform() ? (await Preferences.get({ key: KEY })).value : localStorage.getItem('CapacitorStorage.' + KEY);
     if (!value) return { library: defaultLibrary() };
     return { library: librarySchema.parse(JSON.parse(value)) };
   } catch {
@@ -14,7 +15,10 @@ export async function loadLibrary(): Promise<{ library: Library; warning?: strin
 }
 export function saveLibrary(library: Library) {
   const value = JSON.stringify(library);
-  const save = pending.catch(() => {}).then(() => Preferences.set({ key: KEY, value }));
+  const save = pending.catch(() => {}).then(async () => {
+    if (Capacitor.isNativePlatform()) await Preferences.set({ key: KEY, value });
+    else localStorage.setItem('CapacitorStorage.' + KEY, value);
+  });
   pending = save;
   return save;
 }
@@ -22,7 +26,7 @@ export function parseBackup(text: string): Library {
   if (text.length > 20_000_000) throw new Error('Backup exceeds 20 MB.');
   const backup = librarySchema.parse(JSON.parse(text));
   // Imported files can have stale or edited verification flags.
-  const recheck = (track: Library['liked'][number]) => ({ ...track, musicVerified: undefined });
+  const recheck = (track: Library['liked'][number]) => ({ ...track, musicVerified: undefined, musicSource: undefined });
   return { ...backup, liked: backup.liked.map(recheck), history: backup.history.map(h => ({ ...h, track: recheck(h.track) })),
     playlists: backup.playlists.map(p => ({ ...p, tracks: p.tracks.map(recheck) })) };
 }
