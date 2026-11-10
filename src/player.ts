@@ -99,7 +99,7 @@ export class Player {
     this.update({ position: 0, duration: track.lengthSeconds, loading: true, playing: false, error: '' });
     try {
       const api = new Invidious(this.library().settings);
-      const detail = await api.video(track.videoId, this.controller.signal);
+      const detail = await api.video(track.videoId, this.controller.signal, track);
       if (generation !== this.generation) return;
       const formats = detail.formats.filter(f => this.native || Boolean(this.audio.canPlayType(f.type))).sort((a, b) => Number(b.type.startsWith('audio/mp4')) - Number(a.type.startsWith('audio/mp4')) || b.bitrate - a.bitrate);
       this.sources = formats.map(f => api.stream(track.videoId, f.itag));

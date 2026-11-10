@@ -3,8 +3,9 @@ import sharp from 'sharp';
 import { mkdir, writeFile, readFile, copyFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 process.chdir(fileURLToPath(new URL('..', import.meta.url)));
-const rounded = await readFile('brand/logo-rounded.png');
 const icon = await readFile('assets/favicons/dark-transparent.png');
+const rounded = icon;
+for (const file of ['brand/logo.png', 'brand/logo-rounded.png', 'website/assets/logo.png']) await writeFile(file, icon);
 await mkdir('build/icons', { recursive: true });
 await mkdir('public', { recursive: true });
 const png = (input, size) => sharp(input).resize(size, size).png().toBuffer();
@@ -57,4 +58,4 @@ for (const [size, name] of [[32, '32x32'], [128, '128x128'], [256, '128x128@2x']
   await writeFile('src-tauri/icons/' + name + '.png', await sharp(icon).resize(size, size).toColourspace('srgb').ensureAlpha().png().toBuffer());
 }
 for (const name of ['icon.ico', 'icon.icns']) await copyFile('build/icons/' + name, 'src-tauri/icons/' + name);
-console.log('Generated app icons from assets/favicons/dark-transparent.png and in-app logos from brand/.');
+console.log('Generated app icons from assets/favicons/dark-transparent.png for all app and website branding.');

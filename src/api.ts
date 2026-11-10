@@ -102,9 +102,9 @@ export class Invidious {
   async classify(track: Track, signal?: AbortSignal) {
     return catalogClassify(this.settings, track, signal);
   }
-  async video(id: string, signal?: AbortSignal) {
+  async video(id: string, signal?: AbortSignal, knownTrack?: Track) {
     const detail = await this.details(id, signal);
-    if (!await catalogClassify(this.settings, detail.track, signal) || detail.track.liveNow) throw new ApiError('This video has no supported music metadata.');
+    if (!await catalogClassify(this.settings, knownTrack?.videoId === id ? knownTrack : detail.track, signal) || detail.track.liveNow) throw new ApiError('This video has no supported music metadata.');
     return detail;
   }
   async related(id: string, signal?: AbortSignal) {
