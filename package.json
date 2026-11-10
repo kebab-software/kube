@@ -1,6 +1,6 @@
 {
   "name": "kube-music",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "private": true,
   "description": "A private, local-first Invidious music player",
   "author": "Kube contributors",

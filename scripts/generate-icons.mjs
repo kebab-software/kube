@@ -54,7 +54,7 @@ for (const version of [26, 33]) {
 }
 await mkdir('src-tauri/icons', { recursive: true });
 for (const [size, name] of [[32, '32x32'], [128, '128x128'], [256, '128x128@2x']]) {
-  await writeFile('src-tauri/icons/' + name + '.png', await png(icon, size));
+  await writeFile('src-tauri/icons/' + name + '.png', await sharp(icon).resize(size, size).toColourspace('srgb').ensureAlpha().png().toBuffer());
 }
 for (const name of ['icon.ico', 'icon.icns']) await copyFile('build/icons/' + name, 'src-tauri/icons/' + name);
 console.log('Generated app icons from assets/favicons/dark.png and in-app logos from brand/.');
