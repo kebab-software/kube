@@ -6,7 +6,7 @@ The existing `website/` landing page and `brand/` assets are separate from the a
 ## GitHub builds
 
 The **Build Kube** workflow runs on pushes, pull requests, and manual dispatches.
-Open [Actions](https://github.com/kebab-software/kube/actions/workflows/build.yml),
+Open [Actions](https://github.com/getkube/kube/actions/workflows/build.yml),
 choose a run, and download its artifacts when it completes:
 
 - `kube-web`: static web build.

@@ -27,7 +27,7 @@ async fn request_json(client: State<'_, Client>, input: String) -> Result<Value,
 
 #[tauri::command]
 fn release_notes(app: tauri::AppHandle) -> Result<(), String> {
-    app.opener().open_url("https://github.com/kebab-software/kube/releases", None::<&str>).map_err(|e| e.to_string())
+    app.opener().open_url("https://github.com/getkube/kube/releases", None::<&str>).map_err(|e| e.to_string())
 }
 
 fn main() {

@@ -40,7 +40,7 @@
   "plugins": {
     "updater": {
       "endpoints": [
-        "https://github.com/kebab-software/kube/releases/latest/download/tauri-update.json"
+        "https://github.com/getkube/kube/releases/latest/download/tauri-update.json"
       ],
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDk4MDkzNjJDRTg1OUM2NEYKUldSUHhsbm9MRFlKbUw4NDRIeEIrM2gwcFJGMWZ3em9HTGNuM1BzZEZDdmRscTV3a1hMQWVLT0gK"
     }

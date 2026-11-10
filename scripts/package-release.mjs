@@ -6,7 +6,7 @@ const { releaseVersion } = createRequire(import.meta.url)('./release-version.cjs
 const tag = process.env.RELEASE_TAG;
 const { version, versionCode } = releaseVersion(tag);
 const repo = process.env.GITHUB_REPOSITORY;
-if (repo !== 'kebab-software/kube') throw new Error('Unexpected release repository');
+if (repo !== 'getkube/kube') throw new Error('Unexpected release repository');
 await mkdir('release-assets', { recursive: true });
 async function files(directory) { const entries = await readdir(directory, { withFileTypes: true }); const result = []; for (const entry of entries) { const name = path.join(directory, entry.name); if (entry.isDirectory()) result.push(...await files(name)); else if (entry.isFile()) result.push(name); } return result; }
 const all = await files('build-artifacts');

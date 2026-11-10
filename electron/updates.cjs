@@ -30,7 +30,7 @@ function configureUpdates(getWindow) {
   ipcMain.handle('kube:update-status', event => { trusted(event); return state; });
   ipcMain.handle('kube:update-check', event => { trusted(event); return check(); });
   ipcMain.handle('kube:update-install', event => { trusted(event); if (supported && state.status === 'ready') setImmediate(() => autoUpdater.quitAndInstall(false, true)); });
-  ipcMain.handle('kube:releases', event => { trusted(event); return shell.openExternal('https://github.com/kebab-software/kube/releases'); });
+  ipcMain.handle('kube:releases', event => { trusted(event); return shell.openExternal('https://github.com/getkube/kube/releases'); });
   if (supported) { setTimeout(check, 15000).unref(); setInterval(check, 6 * 60 * 60 * 1000).unref(); }
 }
 module.exports = { configureUpdates };

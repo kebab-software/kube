@@ -4,7 +4,7 @@ const sodium = require('../.tools/github-secrets/node_modules/libsodium-wrappers
   let input = ''; for await (const chunk of process.stdin) input += chunk;
   const { token, values } = JSON.parse(input); input = '';
   await sodium.ready;
-  const base = 'https://api.github.com/repos/kebab-software/kube/actions/secrets';
+  const base = 'https://api.github.com/repos/getkube/kube/actions/secrets';
   const headers = { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
   const keyResponse = await fetch(`${base}/public-key`, { headers });
   if (!keyResponse.ok) throw new Error(`Could not read repository public key: HTTP ${keyResponse.status}`);

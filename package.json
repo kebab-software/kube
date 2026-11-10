@@ -81,7 +81,7 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "kebab-software",
+        "owner": "getkube",
         "repo": "kube",
         "releaseType": "release"
       }

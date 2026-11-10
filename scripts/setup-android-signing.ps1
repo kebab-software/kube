@@ -13,7 +13,7 @@ foreach ($line in $lines) { $pair = $line -split '=', 2; if ($pair.Count -eq 2) 
 if (!$credential.password) { throw 'No GitHub credential available.' }
 $headers = @{ Authorization = 'Bearer ' + $credential.password; Accept = 'application/vnd.github+json' }
 try {
-  $existing = Invoke-RestMethod -Uri 'https://api.github.com/repos/kebab-software/kube/actions/secrets?per_page=100' -Headers $headers
+  $existing = Invoke-RestMethod -Uri 'https://api.github.com/repos/getkube/kube/actions/secrets?per_page=100' -Headers $headers
   $names = @($existing.secrets.name)
   if (($names -contains 'KUBE_ANDROID_KEYSTORE_BASE64') -and ($names -contains 'KUBE_ANDROID_KEYSTORE_PASSWORD')) {
     Write-Output 'Android signing secrets already exist; preserving them.'

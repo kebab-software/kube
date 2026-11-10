@@ -44,7 +44,7 @@ describe('desktop automatic updater', () => {
   });
   it('opens only the fixed release page and reports failed downloads', () => {
     const app = setup(); app.invoke('kube:releases');
-    expect(app.openExternal).toHaveBeenCalledWith('https://github.com/kebab-software/kube/releases');
+    expect(app.openExternal).toHaveBeenCalledWith('https://github.com/getkube/kube/releases');
     app.updater.emit('error', new Error('internal request details'));
     expect(app.invoke('kube:update-status').status).toBe('error');
     expect(app.invoke('kube:update-status').message).not.toContain('internal request details');

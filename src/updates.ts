@@ -17,7 +17,7 @@ export const updateStore = {
     try { if (isTauri()) await installDesktop(); else if (window.kubeDesktop) await window.kubeDesktop.installUpdate(); else if (Capacitor.isNativePlatform()) await NativeUpdater.install(); }
     catch (e) { publish({ ...state, message: e instanceof Error ? e.message : 'Could not start installation.' }); }
   },
-  openReleases: async () => { if (isTauri()) await invoke("release_notes"); else if (window.kubeDesktop) await window.kubeDesktop.openReleases(); else if (Capacitor.isNativePlatform()) await NativeUpdater.openReleases(); else window.open('https://github.com/kebab-software/kube/releases', '_blank', 'noopener,noreferrer'); },
+  openReleases: async () => { if (isTauri()) await invoke("release_notes"); else if (window.kubeDesktop) await window.kubeDesktop.openReleases(); else if (Capacitor.isNativePlatform()) await NativeUpdater.openReleases(); else window.open('https://github.com/getkube/kube/releases', '_blank', 'noopener,noreferrer'); },
 };
 export function startUpdates() {
   if (isTauri()) return watchDesktop(publish);

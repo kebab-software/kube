@@ -24,7 +24,7 @@ import org.json.JSONObject;
 
 @CapacitorPlugin(name = "KubeUpdater")
 public class KubeUpdaterPlugin extends Plugin {
-    private static final String FEED = "https://github.com/kebab-software/kube/releases/latest/download/android-update.json";
+    private static final String FEED = "https://github.com/getkube/kube/releases/latest/download/android-update.json";
     private static final long MAX_APK_BYTES = 250L * 1024 * 1024;
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private volatile String phase = BuildConfig.KUBE_AUTO_UPDATE ? "idle" : "unavailable";
@@ -72,7 +72,7 @@ public class KubeUpdaterPlugin extends Plugin {
         if (code <= BuildConfig.VERSION_CODE) { phase = "current"; message = "Kube is up to date."; return; }
         version = update.getString("version");
         String url = update.getString("url"), hash = update.getString("sha256");
-        if (!version.matches("[0-9]+\\.[0-9]+\\.[0-9]+") || !hash.matches("[0-9a-f]{64}") || !url.startsWith("https://github.com/kebab-software/kube/releases/download/") || !url.endsWith(".apk")) throw new IOException("Invalid update manifest");
+        if (!version.matches("[0-9]+\\.[0-9]+\\.[0-9]+") || !hash.matches("[0-9a-f]{64}") || !url.startsWith("https://github.com/getkube/kube/releases/download/") || !url.endsWith(".apk")) throw new IOException("Invalid update manifest");
         File folder = new File(getContext().getCacheDir(), "updates"); if (!folder.exists() && !folder.mkdirs()) throw new IOException("No update cache");
         File partial = new File(folder, "pending-update.apk");
         phase = "downloading"; progress = 0; message = "Downloading Kube " + version + "…";
@@ -115,7 +115,7 @@ public class KubeUpdaterPlugin extends Plugin {
         });
     }
     @PluginMethod public void openReleases(PluginCall call) {
-        getActivity().runOnUiThread(() -> { try { getActivity().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/kebab-software/kube/releases"))); call.resolve(); } catch (Exception e) { call.reject("Could not open release notes", e); } });
+        getActivity().runOnUiThread(() -> { try { getActivity().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/getkube/kube/releases"))); call.resolve(); } catch (Exception e) { call.reject("Could not open release notes", e); } });
     }
     @Override protected void handleOnDestroy() { worker.shutdownNow(); }
 }

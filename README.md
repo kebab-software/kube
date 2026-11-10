@@ -4,7 +4,7 @@
 </div>
 
 <!-- Sheilds Section -->
-<div align="center"><img alt="GitHub branch check runs" src="https://img.shields.io/github/check-runs/kebab-software/kube/main?style=for-the-badge">&ensp;<img alt="GitHub language count" src="https://img.shields.io/github/languages/count/kebab-software/kube?style=for-the-badge">&ensp;<img alt="GitHub Issues" src="https://img.shields.io/github/issues/kebab-software/kube?style=for-the-badge"></div>
+<div align="center"><img alt="GitHub branch check runs" src="https://img.shields.io/github/check-runs/getkube/kube/main?style=for-the-badge">&ensp;<img alt="GitHub language count" src="https://img.shields.io/github/languages/count/getkube/kube?style=for-the-badge">&ensp;<img alt="GitHub Issues" src="https://img.shields.io/github/issues/getkube/kube?style=for-the-badge"></div>
 
 <br />
 
@@ -14,8 +14,8 @@ The React application builds for web, Android, Windows, macOS, and Linux.
 
 - [Build and development instructions](BUILDING.md)
 - [Release workflow and automatic updates](RELEASING.md)
-- [Download Kube for your platform](https://github.com/kebab-software/kube/releases/latest)
-- [Development builds](https://github.com/kebab-software/kube/actions/workflows/build.yml)
+- [Download Kube for your platform](https://github.com/getkube/kube/releases/latest)
+- [Development builds](https://github.com/getkube/kube/actions/workflows/build.yml)
 
 Release builds include update checking and downloads. Android installation requires
 system confirmation; macOS automatic installation requires Apple signing credentials.
