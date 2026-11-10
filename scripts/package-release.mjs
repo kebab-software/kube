@@ -24,7 +24,7 @@ for (const file of ['latest.yml','latest-linux.yml','latest-mac.yml']) if (!(awa
 const webName = 'Kube-v' + version + '.html';
 await copyFile(path.join('build-artifacts/kube-web', webName), path.join('release-assets', webName));
 const hash = data => createHash('sha256').update(data).digest('hex');
-await writeFile('release-assets/android-update.json', JSON.stringify({ version, versionCode, url: `https://github.com/${repo}/releases/download/${encodeURIComponent(tag)}/${apkName}`, sha256: hash(await readFile(apk[0])) }, null, 2));
+await writeFile('release-assets/android-update.json', JSON.stringify({ version, versionCode, url: `https://github.com/kebab-software/kube/releases/download/${encodeURIComponent(tag)}/${apkName}`, sha256: hash(await readFile(apk[0])) }, null, 2));
 await writeFile('release-assets/build-info.json', JSON.stringify({ version, tag, commit: process.env.GITHUB_SHA, run: `https://github.com/${repo}/actions/runs/${process.env.GITHUB_RUN_ID}`, android: 'Persistent release signing key', macAutomaticUpdates: 'Requires Developer ID signing credentials' }, null, 2));
 const platforms = {};
 for (const file of await readdir('release-assets')) {
