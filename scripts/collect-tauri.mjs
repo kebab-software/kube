@@ -15,7 +15,7 @@ for (const [dir, ext] of specs[process.platform]) {
   const root = path.join(bundle, dir);
   const matches = (await readdir(root)).filter(name => name.endsWith(ext));
   if (matches.length !== 1) throw new Error('Expected one ' + ext + ' in ' + root);
-  const name = 'Kube-Desktop-v' + version + '-' + target + '-' + arch + ext;
+  const name = 'Kube-v' + version + '-' + target + '-' + arch + ext;
   const from = path.join(root, matches[0]), to = path.join('tauri-release', name);
   await copyFile(from, to);
   if (process.env.RELEASE_VERSION && ext !== '.dmg') await copyFile(from + '.sig', to + '.sig');

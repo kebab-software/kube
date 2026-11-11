@@ -1,3 +1,4 @@
+import { AccountButton, AccountPage } from './Account';
 import { DesktopWindow } from './DesktopWindow';
 import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from 'react';
 import { Search, Home, Library, Heart, Clock3, Users, Settings as SettingsIcon, Plus, ArrowRight, Play, RefreshCw, ListMusic, Trash2, ArrowUp, ArrowDown, X, Music2, Check, Pencil } from 'lucide-react';
@@ -11,7 +12,7 @@ import { Sidebar } from './components/ui/sidebar';
 import { useMusicLibrary } from './useMusicLibrary';
 import { UpdateNotice } from './UpdateNotice';
 
-type View = 'home' | 'search' | 'liked' | 'playlists' | 'history' | 'artists' | 'settings' | 'queue' | 'artist' | 'playlist';
+type View = 'account' | 'home' | 'search' | 'liked' | 'playlists' | 'history' | 'artists' | 'settings' | 'queue' | 'artist' | 'playlist';
 export function App() {
   const { library: stored, update, player, notice, notify, storageWarning } = useApp();
   const library = useMusicLibrary(stored, update);
@@ -106,11 +107,11 @@ export function App() {
   const titles: Partial<Record<View, [string, string]>> = { search: [query ? `Results for “${query}”` : 'Search', 'Search for a song or artist.'], liked: ['Liked songs', `${library.liked.length} liked tracks.`], history: ['Recently played', 'Your listening history.'], artists: ['Your artists', 'Artists you follow.'], playlists: ['Your playlists', 'Saved on this device.'], queue: ['Up next', `${playback.queue.length} tracks in your listening session.`] };
   return <div className="app-shell">
     <Sidebar items={[...nav, { id: 'queue', title: 'Queue', icon: ListMusic }, { id: 'settings', title: 'Settings', icon: SettingsIcon }]} active={view} navigate={navigate} />
-    <div className="workspace"><header className="topbar" data-tauri-drag-region><button className="mobile-brand" aria-label="Kube home" onClick={() => navigate('home')}><img src="./logo.png" alt="" /></button><form className="search-box" onSubmit={e => { e.preventDefault(); doSearch(search); }}><Search size={19} /><input aria-label="Search music" placeholder="Search songs, artists, and more" value={search} maxLength={300} onChange={e => setSearch(e.target.value)} /><kbd>↵</kbd></form><button className="connection-badge" onClick={() => navigate('settings')} title={library.settings.instance}><span className="connection-dot" /> Invidious <span className="connection-host">/ {new URL(library.settings.instance).hostname}</span></button><IconButton label="Show queue" active={view === 'queue'} onClick={() => navigate('queue')}><ListMusic size={20} /></IconButton><DesktopWindow /></header>
+    <div className="workspace"><header className="topbar" data-tauri-drag-region><button className="mobile-brand" aria-label="Kube home" onClick={() => navigate('home')}><img src="./logo.png" alt="" /></button><form className="search-box" onSubmit={e => { e.preventDefault(); doSearch(search); }}><Search size={19} /><input aria-label="Search music" placeholder="Search songs, artists, and more" value={search} maxLength={300} onChange={e => setSearch(e.target.value)} /><kbd>↵</kbd></form><button className="connection-badge" onClick={() => navigate('settings')} title={library.settings.instance}><span className="connection-dot" /> Invidious <span className="connection-host">/ {new URL(library.settings.instance).hostname}</span></button><IconButton label="Show queue" active={view === 'queue'} onClick={() => navigate('queue')}><ListMusic size={20} /></IconButton><AccountButton open={() => navigate('account')} /><DesktopWindow /></header>
     <main ref={mainRef}>
       {storageWarning && <Failure message={storageWarning} />}
       {playback.error && <div className="playback-error" role="alert"><span>{playback.error}</span><button onClick={() => void player.resume()}>Retry</button><button onClick={() => navigate('settings')}>Settings</button></div>}
-      {view === 'settings' ? <Settings /> : <>
+      {view === 'account' ? <AccountPage back={() => navigate('home')} /> : view === 'settings' ? <Settings openAccount={() => navigate('account')} /> : <>
         {view === 'home' ? <>
           <header className="listen-heading"><div><h1>Listen now</h1><p>{library.history.length || library.liked.length ? 'Recommendations based on your listening' : 'Music recommendations'}</p></div><div className="button-row"><IconButton label="Refresh recommendations" onClick={() => setRefresh(n => n + 1)} disabled={loading}><RefreshCw size={18} /></IconButton><button className="primary" disabled={!results.length || loading} onClick={() => results[0] && void player.play(results[0], results)}><Play size={16} fill="currentColor" /> Play mix</button></div></header>
           <nav className="library-shortcuts" aria-label="Library shortcuts"><button onClick={() => navigate('liked')}><Heart size={17} /> Liked songs <small>{library.liked.length}</small></button><button onClick={() => navigate('playlists')}><Library size={17} /> Playlists <small>{library.playlists.length}</small></button><button onClick={() => navigate('artists')}><Users size={17} /> Artists <small>{library.artists.length}</small></button><button onClick={() => navigate('history')}><Clock3 size={17} /> History</button></nav>

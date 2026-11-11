@@ -113,7 +113,7 @@ Settings or host your own Invidious instance.
 Likes, playlists, artist follows, hidden tracks, preferences, and listening history
 are stored using Capacitor Preferences (localStorage on web/desktop). Backups have
 a versioned, validated JSON format. Android exports through the system file picker.
-Unreadable storage is not automatically overwritten. There is no account sync,
+Unreadable storage is not automatically overwritten. Account sync is optional;
 telemetry, or offline audio download. Instance operators still observe requests.
 
 Recommendations combine music trending results, related videos from up to three
@@ -158,3 +158,10 @@ Run npm run deploy:web after signing in with npx cf auth login. cloudflare.confi
 The relay accepts only catalog JSON requests, strips browser credentials, limits request and response sizes, and logs bounded error diagnostics.
 
 The landing page is hosted by the kube-website Pages project at https://getkube.jamesd.uk. It deploys the website directory on pushes to main. The app custom domain https://kube.jamesd.uk is declared in cloudflare.config.ts.
+
+
+## Account service and sync
+Cloudflare D1 binding DB stores accounts, salted PBKDF2 password hashes, hashed 30-day sessions and versioned library records. Apply cloudflare/migrations with cf d1 migrations apply before deploying to a new database. The production database is configured in cloudflare.config.ts.
+The web uses secure HTTP-only cookies. Native clients use an opaque bearer session stored in their app preferences. Sign-out revokes that session. Login and sign-up are rate limited by client IP.
+Cloud sync covers liked songs, playlists, playlist tracks, followed artists, hidden tracks and history. It retains tombstones, queues local edits through offline periods and polls for remote changes every 20 seconds while running. Changes to different items merge. For simultaneous edits to the same item, the last write received by the server wins. Volume, queue and connection preferences are device-local.
+An account supports up to 20 MB and 60,000 sync records, including deletion markers. Email verification and email-based password recovery are not configured.

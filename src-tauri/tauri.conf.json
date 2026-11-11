@@ -1,5 +1,5 @@
 {
-  "productName": "Kube Desktop",
+  "productName": "Kube",
   "identifier": "app.kube.music.desktop",
   "version": "../package.json",
   "build": {

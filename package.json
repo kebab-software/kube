@@ -1,6 +1,6 @@
 {
   "name": "kube-music",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "private": true,
   "description": "A private, local-first Invidious music player",
   "author": "Kube contributors",
@@ -53,6 +53,7 @@
   "devDependencies": {
     "@capacitor/cli": "^8.0.0",
     "@cloudflare/vite-plugin": "^2.0.0-beta.v.14",
+    "@cloudflare/workers-types": "^5.20261110.1",
     "@playwright/test": "^1.56.0",
     "@tauri-apps/cli": "^2.12.4",
     "@types/node": "^24.0.0",

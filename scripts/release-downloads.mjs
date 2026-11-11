@@ -5,7 +5,7 @@ const tag = process.env.RELEASE_TAG;
 const release = JSON.parse(execFileSync('gh', ['release', 'view', tag, '--json', 'body,assets'], { encoding: 'utf8' }));
 const platforms = { '.exe': 'Windows', '.dmg': 'macOS (Apple silicon)', '.AppImage': 'Linux', '.apk': 'Android', '.html': 'Web browser', '.aab': 'Android App Bundle (distribution)', '.mjs': 'Web catalog server (Node.js 22+)' };
 const rows = Object.entries(platforms).map(([extension, platform]) => {
-  const asset = release.assets.find(item => item.name.endsWith(extension) && (!['.exe', '.dmg', '.AppImage'].includes(extension) || item.name.startsWith('Kube-Desktop-v')));
+  const asset = release.assets.find(item => item.name.endsWith(extension) && (!['.exe', '.dmg', '.AppImage'].includes(extension) || item.name.startsWith('Kube-v')));
   if (!asset) throw new Error('Missing download for ' + platform);
   return '| ' + platform + ' | [' + asset.name + '](' + asset.url + ') |';
 });

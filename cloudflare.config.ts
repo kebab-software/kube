@@ -1,4 +1,4 @@
-import { defineConfig } from 'cf/config';
+import { defineConfig, bindings } from 'cf/config';
 
 export default defineConfig({
   worker: {
@@ -7,7 +7,8 @@ export default defineConfig({
     compatibilityDate: '2026-11-10',
     workersDev: true,
     domains: ['kube.jamesd.uk'],
-    assets: { runWorkerFirst: ['/catalog/*', '/health'] },
+    env: { DB: bindings.d1({ id: '3aa91c00-90ee-4198-8636-081fe207ba70', name: 'kube-accounts' }) },
+    assets: { runWorkerFirst: ['/catalog/*', '/api/*', '/health'] },
     observability: { enabled: true, traces: { enabled: true } },
   },
 });

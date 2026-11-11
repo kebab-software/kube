@@ -1,4 +1,6 @@
-import { createContext, useContext, useRef, useState, useEffect, type ReactNode } from 'react';
+import { accountStore } from './account-store';
+import { attachSync, recordLibrary } from './sync';
+import { createContext, useContext, useRef, useState, useEffect, useSyncExternalStore, type ReactNode } from 'react';
 import { type Library, type Track, type Listen } from './model';
 import { saveLibrary } from './storage';
 import { Player } from './player';
@@ -18,8 +20,18 @@ export function AppProvider({ initial, warning = '', children }: { initial: Libr
   const writable = useRef(!warning);
   const update = (fn: (old: Library) => Library) => {
     const next = fn(latest.current); latest.current = next; setLibrary(next);
+    if (writable.current) recordLibrary(next);
     if (writable.current) void saveLibrary(next).catch(() => setStorageWarning('Changes could not be saved. Export a backup before closing Kube.'));
   };
+  const account = useSyncExternalStore(accountStore.subscribe,accountStore.snapshot);
+  useEffect(()=>{void accountStore.initialize();},[]);
+  useEffect(()=>{
+    if(!account.user || !writable.current)return;
+    return attachSync(account.user.id,()=>latest.current,next=>{
+      latest.current=next;setLibrary(next);
+      void saveLibrary(next).catch(()=>setStorageWarning('The synced library could not be saved. Export a backup.'));
+    });
+  },[account.user?.id]);
   const playerRef = useRef<Player | null>(null);
   if (!playerRef.current) playerRef.current = new Player(() => latest.current, (listen: Listen) => {
     update(old => ({ ...old, history: [listen, ...old.history.filter(h => h.at !== listen.at)].slice(0, 3000) }));
@@ -30,7 +42,7 @@ export function AppProvider({ initial, warning = '', children }: { initial: Libr
   return <AppContext.Provider value={{ library, update, player, notice, notify, storageWarning,
     like: track => update(old => ({ ...old, liked: old.liked.some(t => t.videoId === track.videoId) ? old.liked.filter(t => t.videoId !== track.videoId) : [track, ...old.liked], hidden: old.hidden.filter(id => id !== track.videoId) })),
     hide: track => { update(old => ({ ...old, hidden: [...new Set([...old.hidden, track.videoId])], liked: old.liked.filter(t => t.videoId !== track.videoId) })); notify('Hidden from recommendations. You can undo this in Settings.'); },
-    recover: async next => { await saveLibrary(next); writable.current = true; setStorageWarning(''); latest.current = next; setLibrary(next); },
+    recover: async next => { recordLibrary(next); await saveLibrary(next); writable.current = true; setStorageWarning(''); latest.current = next; setLibrary(next); },
   }}>{children}</AppContext.Provider>;
 }
 export function useApp() { const value = useContext(AppContext); if (!value) throw new Error('App provider missing'); return value; }

@@ -1,3 +1,4 @@
+import { accounts, type AccountEnv } from './accounts';
 const allowedRoutes = new Set(['/youtubei/v1/search', '/youtubei/v1/browse', '/youtubei/v1/next', '/youtubei/v1/player']);
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -8,8 +9,9 @@ function error(message: string, status: number) {
   return Response.json({ error: message }, { status, headers: cors });
 }
 export default {
-  async fetch(request: Request) {
+  async fetch(request: Request, env?: AccountEnv) {
     const url = new URL(request.url);
+    if (url.pathname.startsWith('/api/')) return env ? accounts(request, env) : error('Account database unavailable',503);
     if (url.pathname === '/health') return Response.json({ status: 'ok', service: 'kube-web' });
     const route = url.pathname.slice('/catalog'.length);
     if (!url.pathname.startsWith('/catalog/') || !allowedRoutes.has(route)) return error('Unknown catalog route', 404);

@@ -22,7 +22,7 @@
   }).then(release => {
     const suffix = { Android: '.apk', Windows: '.exe', macOS: '.dmg', Linux: '.AppImage' }[os];
     const asset = release.assets?.find(file => file.name.endsWith(suffix) &&
-      (os === 'Android' || file.name.startsWith('Kube-Desktop-v')));
+      (os === 'Android' || file.name.startsWith('Kube-v')));
     if (!asset) return;
     const url = new URL(asset.browser_download_url);
     if (url.origin !== 'https://github.com' || !url.pathname.startsWith('/getkube/kube/releases/download/')) return;

@@ -29,7 +29,7 @@ await writeFile('release-assets/android-update.json', JSON.stringify({ version, 
 await writeFile('release-assets/build-info.json', JSON.stringify({ version, tag, commit: process.env.GITHUB_SHA, run: `https://github.com/${repo}/actions/runs/${process.env.GITHUB_RUN_ID}`, android: 'Persistent release signing key', macAutomaticUpdates: 'Requires Developer ID signing credentials' }, null, 2));
 const platforms = {};
 for (const file of await readdir('release-assets')) {
-  const signature = file.match(/^Kube-Desktop-v[\d.]+-(windows|darwin|linux)-(x86_64|aarch64)\.(?:exe|app\.tar\.gz|AppImage)\.sig$/);
+  const signature = file.match(/^Kube-v[\d.]+-(windows|darwin|linux)-(x86_64|aarch64)\.(?:exe|app\.tar\.gz|AppImage)\.sig$/);
   if (!signature) continue;
   const binary = file.slice(0, -4);
   platforms[signature[1] + '-' + signature[2]] = {
